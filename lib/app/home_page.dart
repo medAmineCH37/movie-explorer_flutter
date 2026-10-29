@@ -1,13 +1,16 @@
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/movie_management/data/models/movie.dart';
 import '../features/movie_management/data/services/tmdb_service.dart';
+import '../features/user_management/data/auth_service.dart';
+import '../features/user_management/domain/auth_repository.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, this.authService});
+
+  final AuthRepository? authService;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -15,6 +18,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final TmdbService _tmdbService = TmdbService();
+  late final AuthRepository _authService;
 
   late Future<List<Movie>> _moviesFuture;
 
@@ -60,6 +64,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _authService = widget.authService ?? AuthService();
     _moviesFuture = _tmdbService.getPopularMovies();
   }
 
@@ -73,6 +78,73 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _moviesFuture = _tmdbService.getPopularMovies();
     });
+  }
+
+  Future<void> _handleAccountTap() async {
+    final user = _authService.currentUser;
+
+    if (user == null) {
+      if (mounted) {
+        context.push('/login');
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const ListTile(
+                  leading: Icon(Icons.account_circle_outlined),
+                  title: Text('Your account'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.email_outlined),
+                  title: Text(user.email ?? 'No email available'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: const Text('Sign out'),
+                  onTap: () async {
+                    Navigator.of(sheetContext).pop();
+
+                    try {
+                      await _authService.signOut();
+
+                      if (!mounted) return;
+
+                      context.go('/');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Signed out successfully.'),
+                        ),
+                      );
+                    } catch (_) {
+                      if (!mounted) return;
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Could not sign out. Please try again.',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -94,15 +166,14 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Profile will be available soon.'),
-                ),
-              );
-            },
+            onPressed: () => context.push('/search'),
+            icon: const Icon(Icons.search),
+            tooltip: 'Search movies',
+          ),
+          IconButton(
+            onPressed: _handleAccountTap,
             icon: const Icon(Icons.account_circle_outlined),
-            tooltip: 'Profile',
+            tooltip: 'Account',
           ),
           const SizedBox(width: 8),
         ],
@@ -116,19 +187,18 @@ class _HomePageState extends State<HomePage> {
               child: Text(
                 'YOUR NEXT MOVIE NIGHT',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: colors.primary,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                    ),
+                  color: colors.primary,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
               ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 'Discover something unforgettable.',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 20),
@@ -168,9 +238,8 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: Text(
                       'Popular Movies',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
                   Icon(Icons.local_fire_department, color: colors.primary),
@@ -224,18 +293,16 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 'Explore the app',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(context).textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 6, 20, 16),
               child: Text(
                 'Explore all the features of Movie Explorer.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: colors.onSurfaceVariant),
               ),
             ),
             for (final module in modules) ...[
@@ -285,114 +352,121 @@ class _FeaturedMovie extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: SizedBox(
-          height: 350,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (imageUrl != null)
-                CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, _, _) => const _ImageFallback(),
-                )
-              else
-                const _ImageFallback(),
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Color(0x55000000),
-                      Color(0xF0000000),
-                    ],
-                    stops: [0.15, 0.48, 1],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.push('/movie/${movie.id}'),
+          borderRadius: BorderRadius.circular(24),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: SizedBox(
+              height: 350,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (imageUrl != null)
+                    CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, _, _) => const _ImageFallback(),
+                    )
+                  else
+                    const _ImageFallback(),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Color(0x55000000),
+                          Color(0xF0000000),
+                        ],
+                        stops: [0.15, 0.48, 1],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              Positioned(
-                left: 20,
-                right: 20,
-                bottom: 22,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'POPULAR RIGHT NOW',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      movie.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
+                  Positioned(
+                    left: 20,
+                    right: 20,
+                    bottom: 22,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          color: Color(0xFFFFC857),
-                          size: 20,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          movie.voteAverage.toStringAsFixed(1),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'POPULAR RIGHT NOW',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1,
+                            ),
                           ),
                         ),
-                        if (movie.releaseDate.isNotEmpty) ...[
-                          const SizedBox(width: 12),
+                        const SizedBox(height: 12),
+                        Text(
+                          movie.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              color: Color(0xFFFFC857),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              movie.voteAverage.toStringAsFixed(1),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (movie.releaseDate.isNotEmpty) ...[
+                              const SizedBox(width: 12),
+                              Text(
+                                movie.releaseDate.split('-').first,
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (movie.overview.isNotEmpty) ...[
+                          const SizedBox(height: 8),
                           Text(
-                            movie.releaseDate.split('-').first,
-                            style: const TextStyle(color: Colors.white70),
+                            movie.overview,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              height: 1.4,
+                            ),
                           ),
                         ],
                       ],
                     ),
-                    if (movie.overview.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        movie.overview,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -409,62 +483,65 @@ class _MoviePosterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 140,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: SizedBox(
-                width: double.infinity,
-                child: movie.posterUrl == null
-                    ? const _ImageFallback()
-                    : CachedNetworkImage(
-                        imageUrl: movie.posterUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (_, _) => const _ImageFallback(
-                          loading: true,
+      child: InkWell(
+        onTap: () => context.push('/movie/${movie.id}'),
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: movie.posterUrl == null
+                      ? const _ImageFallback()
+                      : CachedNetworkImage(
+                          imageUrl: movie.posterUrl!,
+                          fit: BoxFit.cover,
+                          placeholder: (_, _) =>
+                              const _ImageFallback(loading: true),
+                          errorWidget: (_, _, _) => const _ImageFallback(),
                         ),
-                        errorWidget: (_, _, _) => const _ImageFallback(),
-                      ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            movie.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const Icon(
-                Icons.star_rounded,
-                color: Color(0xFFFFC857),
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                movie.voteAverage.toStringAsFixed(1),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              if (movie.releaseDate.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    movie.releaseDate.split('-').first,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
+            const SizedBox(height: 8),
+            Text(
+              movie.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(
+                  Icons.star_rounded,
+                  color: Color(0xFFFFC857),
+                  size: 16,
                 ),
+                const SizedBox(width: 4),
+                Text(
+                  movie.voteAverage.toStringAsFixed(1),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                if (movie.releaseDate.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      movie.releaseDate.split('-').first,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
               ],
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -488,10 +565,7 @@ class _FeaturedLoading extends StatelessWidget {
 }
 
 class _LoadError extends StatelessWidget {
-  const _LoadError({
-    required this.message,
-    required this.onRetry,
-  });
+  const _LoadError({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;
