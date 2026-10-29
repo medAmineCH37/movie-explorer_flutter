@@ -1,17 +1,128 @@
-# movie_explorer
+# Movie Explorer
 
-A new Flutter project.
+A Flutter application for discovering movies, exploring movie details, searching a movie catalogue, and managing personalized movie experiences.
+
+Developed as a team project using Flutter, TMDB, and Supabase.
+
+## Features
+
+- Browse popular movies from TMDB.
+- Search movies and view their details.
+- Register, sign in, and sign out using Supabase Authentication.
+- Store application data in Supabase.
+- Planned modules for ratings and reviews, personal collections, discovery, and custom lists.
+
+## Technology Stack
+
+- **Frontend:** Flutter and Dart
+- **Movie catalogue:** TMDB API
+- **Backend services and database:** Supabase
+- **Navigation:** GoRouter
+- **State management:** Riverpod (available for feature development)
+- **Image loading:** Cached Network Image
+
+## Team and Module Ownership
+
+| Module | Responsible teammate |
+|---|---|
+| User Management | Khadija |
+| Movie Management | Baha |
+| Ratings & Reviews | Zina |
+| Personal Collection | Amine |
+| Movie Discovery | Olfa |
+| Recommendations & Custom Lists | Yasmine |
+
+Shared files such as routing, themes, database configuration, and common widgets should be coordinated before modification.
+
+## Prerequisites
+
+Install the following before running the project:
+
+- Flutter SDK and Dart SDK
+- Android Studio or another supported Flutter development environment
+- Git
+- A TMDB API key
+- A Supabase project with the required database schema
+
+Verify your Flutter installation:
+
+```bash
+flutter doctor
+```
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### 1. Clone the repository
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+git clone https://github.com/medAmineCH37/movie-explorer_flutter.git
+cd movie-explorer_flutter
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### 2. Install dependencies
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+```
+
+### 3. Configure environment variables
+
+Create a local `env.json` file in the project root. Obtain your own development credentials for TMDB and Supabase.
+
+Use this structure:
+
+```json
+{
+  "TMDB_API_KEY": "YOUR_TMDB_API_KEY",
+  "SUPABASE_URL": "YOUR_SUPABASE_PROJECT_URL",
+  "SUPABASE_ANON_KEY": "YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY"
+}
+```
+
+Replace the placeholder values with your credentials. Do not commit `env.json`, API keys, passwords, or other secrets.
+
+### 4. Configure the Supabase database
+
+1. Create or access your Supabase project.
+2. Open the SQL Editor in the Supabase dashboard.
+3. Review and execute the SQL in `supabase/schema.sql`.
+4. Confirm that the required tables, trigger, and row-level security policies exist.
+
+The project must use a compatible schema before features that store user data can work.
+
+### 5. Run the application
+
+```bash
+flutter run --dart-define-from-file=env.json
+```
+
+The environment file is local to each developer's machine and is not shared through Git.
+
+## Quality Checks
+
+Run these commands before submitting changes:
+
+```bash
+flutter analyze
+flutter test
+git diff --check
+```
+
+All checks should pass before a change is merged.
+
+## Git Collaboration Workflow
+
+To start work on a module, create a branch from the latest `main`:
+
+```bash
+git switch main
+git pull origin main
+git switch -c feat/your-module-name
+```
+
+Commit focused changes with descriptive messages:
+
+```bash
+git add .
+git commit -m "feat: describe your change"
+git push

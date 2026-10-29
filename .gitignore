@@ -48,5 +48,4 @@ app.*.map.json
 .widget_preview/
 
 # Local API credentials
-/env.json& $adb devices
-env.json
+/env.json
