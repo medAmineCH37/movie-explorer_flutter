@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -55,15 +54,16 @@ class _RegisterPageState extends State<RegisterPage> {
         );
         context.go('/login');
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('Registration error: $error');
+      debugPrintStack(stackTrace: stackTrace);
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Registration failed. The email may already be registered, '
-            'or the password may not meet the requirements.',
-          ),
+        SnackBar(
+          content: Text('Registration failed: $error'),
+          duration: const Duration(seconds: 8),
         ),
       );
     } finally {
@@ -175,9 +175,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('Create account'),
                   ),
