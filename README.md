@@ -65,21 +65,24 @@ cd movie-explorer_flutter
 flutter pub get
 ```
 
-### 3. Configure environment variables
+### Environment configuration
 
-Create a local `env.json` file in the project root. Obtain your own development credentials for TMDB and Supabase.
+The project uses local environment variables for TMDB and Supabase credentials.
 
-Use this structure:
+1. Copy the example configuration file:
 
-```json
-{
-  "TMDB_API_KEY": "YOUR_TMDB_API_KEY",
-  "SUPABASE_URL": "YOUR_SUPABASE_PROJECT_URL",
-  "SUPABASE_ANON_KEY": "YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY"
-}
-```
+   ```powershell
+   Copy-Item env.example.json env.json
+   ```
 
-Replace the placeholder values with your credentials. Do not commit `env.json`, API keys, passwords, or other secrets.
+2. Open `env.json` and replace the placeholder values with your own credentials:
+   - `TMDB_API_KEY`: Your TMDB API key.
+   - `SUPABASE_URL`: Your Supabase project URL.
+   - `SUPABASE_ANON_KEY`: Your Supabase publishable or anon key, as expected by the project.
+
+3. **Never commit `env.json`**. It is excluded by `.gitignore`. Commit only `env.example.json`, which contains placeholders.
+
+Each team member must configure their own local `env.json` before running the application.
 
 ### 4. Configure the Supabase database
 
