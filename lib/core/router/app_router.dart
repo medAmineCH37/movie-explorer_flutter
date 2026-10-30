@@ -1,4 +1,3 @@
-
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 
@@ -8,35 +7,28 @@ import '../../features/movie_management/presentation/pages/movie_details_page.da
 import '../../features/movie_discovery/presentation/pages/movie_search_page.dart';
 import '../../features/user_management/presentation/pages/login_page.dart';
 import '../../features/user_management/presentation/pages/register_page.dart';
+import '../../features/personal_collection/presentation/pages/collection_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const HomePage(),
-    ),
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginPage(),
-    ),
+    GoRoute(path: '/', builder: (context, state) => const HomePage()),
+    GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
     GoRoute(
       path: '/register',
       builder: (context, state) => const RegisterPage(),
     ),
     GoRoute(
+      path: '/collection',
+      builder: (context, state) => const CollectionPage(),
+    ),
+    GoRoute(
       path: '/movie/:movieId',
       builder: (context, state) {
-        final movieId = int.tryParse(
-          state.pathParameters['movieId'] ?? '',
-        );
+        final movieId = int.tryParse(state.pathParameters['movieId'] ?? '');
 
         if (movieId == null) {
-          return const Scaffold(
-            body: Center(
-              child: Text('Invalid movie ID'),
-            ),
-          );
+          return const Scaffold(body: Center(child: Text('Invalid movie ID')));
         }
 
         return MovieDetailsPage(movieId: movieId);
