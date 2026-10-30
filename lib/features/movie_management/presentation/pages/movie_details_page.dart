@@ -1,14 +1,11 @@
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/services/tmdb_service.dart';
+import '../../../personal_collection/presentation/widgets/movie_collection_actions.dart';
 
 class MovieDetailsPage extends StatefulWidget {
-  const MovieDetailsPage({
-    super.key,
-    required this.movieId,
-  });
+  const MovieDetailsPage({super.key, required this.movieId});
 
   final int movieId;
 
@@ -46,9 +43,7 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
         future: _movieFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
@@ -69,7 +64,8 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
           final voteAverage =
               (movie['vote_average'] as num?)?.toDouble() ?? 0.0;
           final runtime = movie['runtime'] as int?;
-          final genres = (movie['genres'] as List<dynamic>?)
+          final genres =
+              (movie['genres'] as List<dynamic>?)
                   ?.map((genre) => genre['name'] as String)
                   .toList() ??
               <String>[];
@@ -108,10 +104,7 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Color(0xFF101014),
-                            ],
+                            colors: [Colors.transparent, Color(0xFF101014)],
                           ),
                         ),
                       ),
@@ -160,9 +153,7 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
                                   style: Theme.of(context)
                                       .textTheme
                                       .headlineSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 12),
                                 Row(
@@ -212,9 +203,7 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
                       const SizedBox(height: 28),
                       Text(
                         'Overview',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleLarge
+                        style: Theme.of(context).textTheme.titleLarge
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 10),
@@ -222,11 +211,19 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
                         overview.isNotEmpty
                             ? overview
                             : 'No overview available for this movie.',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              height: 1.6,
-                              color: Colors.white70,
-                            ),
+                        style: Theme.of(context).textTheme.bodyLarge
+                            ?.copyWith(height: 1.6, color: Colors.white70),
                       ),
+                      const SizedBox(height: 32),
+                      const Text(
+                        'My Collection',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      MovieCollectionActions(movieId: widget.movieId),
                       const SizedBox(height: 32),
                     ],
                   ),

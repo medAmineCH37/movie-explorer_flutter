@@ -1,10 +1,9 @@
-
 import '../../../movie_management/data/models/movie.dart';
 import '../../../movie_management/data/services/tmdb_service.dart';
 
 class CollectionMovieService {
   CollectionMovieService({TmdbService? tmdbService})
-      : _tmdbService = tmdbService ?? TmdbService();
+    : _tmdbService = tmdbService ?? TmdbService();
 
   final TmdbService _tmdbService;
 

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class CollectionTabs extends StatelessWidget {
@@ -72,8 +71,7 @@ class CollectionTabs extends StatelessWidget {
                 label,
                 style: TextStyle(
                   color: isSelected ? colors.onPrimary : Colors.white70,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
             ],

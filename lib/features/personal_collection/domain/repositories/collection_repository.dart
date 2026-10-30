@@ -1,4 +1,3 @@
-
 abstract class CollectionRepository {
   Future<List<int>> getFavorites();
 

@@ -1,10 +1,9 @@
-
 import '../../domain/repositories/collection_repository.dart';
 import '../services/collection_service.dart';
 
 class CollectionRepositoryImpl implements CollectionRepository {
   CollectionRepositoryImpl({CollectionService? service})
-      : _service = service ?? CollectionService();
+    : _service = service ?? CollectionService();
 
   final CollectionService _service;
 

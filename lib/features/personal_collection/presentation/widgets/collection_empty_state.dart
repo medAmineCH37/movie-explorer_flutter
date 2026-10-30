@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class CollectionEmptyState extends StatelessWidget {
@@ -33,28 +32,21 @@ class CollectionEmptyState extends StatelessWidget {
                 color: colors.primary.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                size: 48,
-                color: colors.primary,
-              ),
+              child: Icon(icon, size: 48, color: colors.primary),
             ),
             const SizedBox(height: 24),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             Text(
               description,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white60,
-                    height: 1.5,
-                  ),
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: Colors.white60, height: 1.5),
             ),
             if (buttonLabel != null && onAction != null) ...[
               const SizedBox(height: 24),

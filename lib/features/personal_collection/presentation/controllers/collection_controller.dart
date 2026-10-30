@@ -1,18 +1,18 @@
-
 import 'package:flutter/foundation.dart';
 
 import '../../../movie_management/data/models/movie.dart';
+import '../../domain/repositories/collection_repository.dart';
 import '../../data/repositories/collection_repository_impl.dart';
 import '../../data/services/collection_movie_service.dart';
 
 class CollectionController extends ChangeNotifier {
   CollectionController({
-    CollectionRepositoryImpl? repository,
+    CollectionRepository? repository,
     CollectionMovieService? movieService,
-  })  : _repository = repository ?? CollectionRepositoryImpl(),
-        _movieService = movieService ?? CollectionMovieService();
+  }) : _repository = repository ?? CollectionRepositoryImpl(),
+       _movieService = movieService ?? CollectionMovieService();
 
-  final CollectionRepositoryImpl _repository;
+  final CollectionRepository _repository;
   final CollectionMovieService _movieService;
 
   List<Movie> favorites = [];

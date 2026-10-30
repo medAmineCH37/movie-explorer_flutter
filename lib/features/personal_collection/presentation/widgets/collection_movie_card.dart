@@ -1,4 +1,3 @@
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -76,19 +75,12 @@ class CollectionMovieCard extends StatelessWidget {
             movie.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
           const SizedBox(height: 5),
           Row(
             children: [
-              const Icon(
-                Icons.star_rounded,
-                color: Colors.amber,
-                size: 16,
-              ),
+              const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
               const SizedBox(width: 4),
               Text(
                 movie.voteAverage.toStringAsFixed(1),
@@ -113,11 +105,7 @@ class CollectionMovieCard extends StatelessWidget {
     return Container(
       color: const Color(0xFF1B1B23),
       alignment: Alignment.center,
-      child: const Icon(
-        Icons.movie_outlined,
-        size: 42,
-        color: Colors.white38,
-      ),
+      child: const Icon(Icons.movie_outlined, size: 42, color: Colors.white38),
     );
   }
 }
