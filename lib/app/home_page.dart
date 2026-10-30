@@ -328,7 +328,13 @@ class _HomePageState extends State<HomePage> {
                       child: Text(module.description),
                     ),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.go('/module/${module.id}'),
+                    onTap: () {
+                      if (module.id == 'personal-collection') {
+                        context.go('/collection');
+                      } else {
+                        context.go('/module/${module.id}');
+                      }
+                    },
                   ),
                 ),
               ),

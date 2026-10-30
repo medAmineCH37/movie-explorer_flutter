@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -39,7 +38,17 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (!mounted) return;
-      context.go('/');
+
+      final redirectLocation = GoRouterState.of(context)
+          .uri
+          .queryParameters['redirect'];
+
+      final destination =
+          redirectLocation != null && redirectLocation.startsWith('/')
+          ? redirectLocation
+          : '/';
+
+      context.go(destination);
     } catch (_) {
       if (!mounted) return;
 
@@ -139,9 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('Sign in'),
                   ),
