@@ -34,6 +34,12 @@ class CollectionTabs extends StatelessWidget {
             index: 1,
             colors: colors,
           ),
+          _buildTab(
+            label: 'Watched',
+            icon: Icons.visibility_outlined,
+            index: 2,
+            colors: colors,
+          ),
         ],
       ),
     );

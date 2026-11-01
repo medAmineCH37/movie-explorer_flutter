@@ -1,4 +1,3 @@
-
 class Movie {
   const Movie({
     required this.id,
@@ -8,6 +7,8 @@ class Movie {
     required this.backdropPath,
     required this.voteAverage,
     required this.releaseDate,
+    this.genres = const [],
+    this.runtime,
   });
 
   final int id;
@@ -17,6 +18,8 @@ class Movie {
   final String? backdropPath;
   final double voteAverage;
   final String releaseDate;
+  final List<String> genres;
+  final int? runtime;
 
   factory Movie.fromJson(Map<String, dynamic> json) {
     return Movie(
@@ -28,6 +31,17 @@ class Movie {
       voteAverage: (json['vote_average'] as num?)?.toDouble() ?? 0.0,
       releaseDate:
           (json['release_date'] ?? json['first_air_date'] ?? '') as String,
+      genres:
+          (json['genres'] as List<dynamic>?)
+              ?.map(
+                (genre) => genre is Map<String, dynamic>
+                    ? genre['name'] as String? ?? ''
+                    : '',
+              )
+              .where((name) => name.isNotEmpty)
+              .toList() ??
+          const [],
+      runtime: (json['runtime'] as num?)?.toInt(),
     );
   }
 

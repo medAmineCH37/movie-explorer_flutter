@@ -330,9 +330,9 @@ class _HomePageState extends State<HomePage> {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       if (module.id == 'personal-collection') {
-                        context.go('/collection');
+                        context.push('/collection');
                       } else {
-                        context.go('/module/${module.id}');
+                        context.push('/module/${module.id}');
                       }
                     },
                   ),
