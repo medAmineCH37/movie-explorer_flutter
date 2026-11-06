@@ -1,14 +1,16 @@
-
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:movie_explorer/features/movie_management/data/models/movie.dart';
 import 'package:movie_explorer/features/personal_collection/domain/repositories/collection_repository.dart';
+import 'package:movie_explorer/features/personal_collection/domain/models/collection_entry.dart';
 import 'package:movie_explorer/features/personal_collection/data/services/collection_movie_service.dart';
 import 'package:movie_explorer/features/personal_collection/presentation/controllers/collection_controller.dart';
 
 class FakeCollectionRepository implements CollectionRepository {
   List<int> favoriteIds = [];
   List<int> watchlistIds = [];
+  final Map<int, WatchPriority> priorities = {};
+  final Map<int, DateTime> watchedDates = {};
 
   bool shouldThrow = false;
 
@@ -22,6 +24,30 @@ class FakeCollectionRepository implements CollectionRepository {
   Future<List<int>> getWatchlist() async {
     if (shouldThrow) throw Exception('Repository error');
     return watchlistIds;
+  }
+
+  @override
+  Future<List<CollectionEntry>> getWatchlistEntries() async {
+    if (shouldThrow) throw Exception('Repository error');
+    return watchlistIds
+        .map(
+          (id) => CollectionEntry(
+            movieId: id,
+            priority: priorities[id] ?? WatchPriority.medium,
+          ),
+        )
+        .toList();
+  }
+
+  @override
+  Future<List<CollectionEntry>> getWatchedEntries() async {
+    if (shouldThrow) throw Exception('Repository error');
+    return watchedDates.entries
+        .map(
+          (entry) =>
+              CollectionEntry(movieId: entry.key, watchedAt: entry.value),
+        )
+        .toList();
   }
 
   @override
@@ -39,11 +65,36 @@ class FakeCollectionRepository implements CollectionRepository {
   }
 
   @override
-  Future<void> addToWatchlist(int movieId) async {
+  Future<void> addToWatchlist(
+    int movieId, {
+    WatchPriority priority = WatchPriority.medium,
+  }) async {
     if (shouldThrow) throw Exception('Repository error');
     if (!watchlistIds.contains(movieId)) {
       watchlistIds.add(movieId);
     }
+    watchedDates.remove(movieId);
+    priorities[movieId] = priority;
+  }
+
+  @override
+  Future<void> updateWatchlistPriority(
+    int movieId,
+    WatchPriority priority,
+  ) async {
+    priorities[movieId] = priority;
+  }
+
+  @override
+  Future<void> markWatched(int movieId, DateTime watchedAt) async {
+    watchedDates[movieId] = watchedAt;
+    watchlistIds.remove(movieId);
+    priorities.remove(movieId);
+  }
+
+  @override
+  Future<void> removeWatched(int movieId) async {
+    watchedDates.remove(movieId);
   }
 
   @override

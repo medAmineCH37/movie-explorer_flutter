@@ -9,11 +9,15 @@ class CollectionMovieCard extends StatelessWidget {
     required this.movie,
     required this.onRemove,
     this.onTap,
+    this.subtitle,
+    this.action,
   });
 
   final Movie movie;
   final VoidCallback onRemove;
   final VoidCallback? onTap;
+  final String? subtitle;
+  final Widget? action;
 
   String get _releaseYear {
     if (movie.releaseDate.length >= 4) {
@@ -96,6 +100,19 @@ class CollectionMovieCard extends StatelessWidget {
               ),
             ],
           ),
+          if (subtitle != null && subtitle!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.65),
+                fontSize: 11,
+              ),
+            ),
+          ],
+          ?action,
         ],
       ),
     );
