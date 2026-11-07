@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/services/tmdb_service.dart';
 import '../../../personal_collection/presentation/widgets/movie_collection_actions.dart';
+import '../../../recommendations_custom_lists/presentation/widgets/add_to_list_sheet.dart';
 
 class MovieDetailsPage extends StatefulWidget {
   const MovieDetailsPage({super.key, required this.movieId});
@@ -224,6 +225,8 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
                       ),
                       const SizedBox(height: 16),
                       MovieCollectionActions(movieId: widget.movieId),
+                      const SizedBox(height: 12),
+                      AddToListButton(movieId: widget.movieId),
                       const SizedBox(height: 32),
                     ],
                   ),
