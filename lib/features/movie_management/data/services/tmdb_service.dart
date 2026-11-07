@@ -12,6 +12,7 @@ class TmdbService {
   static const String _apiKey = String.fromEnvironment('TMDB_API_KEY');
   static const String _baseUrl = 'https://api.themoviedb.org/3';
 
+
   Future<List<Movie>> getPopularMovies() async {
     _checkApiKey();
 

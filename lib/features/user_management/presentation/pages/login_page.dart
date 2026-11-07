@@ -1,162 +1,165 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../providers/auth_provider.dart';
 
-import '../../data/auth_service.dart';
-
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _authService = AuthService();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
 
-  bool _isLoading = false;
-  bool _obscurePassword = true;
+  final Color bgIvory = const Color(0xFFF5F3EE);
+  final Color surfaceWhite = const Color(0xFFFFFFFF);
+  final Color textPrimary = const Color(0xFF1B1B19);
+  final Color textMuted = const Color(0xFF716F68);
+  final Color accentGold = const Color(0xFF8C692E);
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _email.dispose();
+    _password.dispose();
     super.dispose();
-  }
-
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      await _authService.signIn(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-
-      if (!mounted) return;
-
-      final redirectLocation = GoRouterState.of(context)
-          .uri
-          .queryParameters['redirect'];
-
-      final destination =
-          redirectLocation != null && redirectLocation.startsWith('/')
-          ? redirectLocation
-          : '/';
-
-      context.go(destination);
-    } catch (_) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login failed. Check your credentials and try again.'),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(authProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Welcome back')),
+      backgroundColor: bgIvory,
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(28.0),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 440),
             child: Form(
               key: _formKey,
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.movie_filter_outlined,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.primary,
+                  Center(
+                    child: Column(
+                      children: [
+                        Container(
+                          height: 56,
+                          width: 56,
+                          decoration: BoxDecoration(
+                            color: textPrimary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.movie_filter_outlined, size: 28, color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'CINEA',
+                          style: TextStyle(color: accentGold, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 3),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 40),
                   Text(
-                    'Sign in to Movie Explorer',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    'CONNEXION CITOYENNE',
+                    style: TextStyle(color: accentGold, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Access your collection, reviews and lists.',
-                    textAlign: TextAlign.center,
+                  const SizedBox(height: 6),
+                  Text(
+                    'De retour sur votre\nécran Cinéphile',
+                    style: TextStyle(color: textPrimary, fontSize: 26, fontWeight: FontWeight.w800, height: 1.2, letterSpacing: -0.5),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
                   TextFormField(
-                    controller: _emailController,
+                    controller: _email,
                     keyboardType: TextInputType.emailAddress,
-                    autocorrect: false,
+                    style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
                     decoration: const InputDecoration(
-                      labelText: 'Email',
+                      labelText: 'ADRESSE E-MAIL',
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Enter your email.';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Enter a valid email address.';
-                      }
-                      return null;
-                    },
+                    validator: (v) => v == null || !v.contains('@') ? 'Entrez un email valide.' : null,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
                   TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                      ),
+                    controller: _password,
+                    obscureText: true,
+                    style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
+                    decoration: const InputDecoration(
+                      labelText: 'MOT DE PASSE SECRÈT',
+                      prefixIcon: Icon(Icons.lock_outline),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Enter your password.';
-                      }
-                      return null;
-                    },
+                    validator: (v) => v == null || v.isEmpty ? 'Entrez votre mot de passe.' : null,
                   ),
                   const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: _isLoading ? null : _login,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Sign in'),
+                  SizedBox(
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: state.isLoading
+                          ? null
+                          : () async {
+                        if (_formKey.currentState!.validate()) {
+                          final router = GoRouter.of(context);
+                          final ok = await ref.read(authProvider.notifier).login(_email.text.trim(), _password.text);
+
+                          if (!mounted) return;
+
+                          if (ok) {
+                            router.go('/');
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        backgroundColor: textPrimary,
+                        foregroundColor: surfaceWhite,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: state.isLoading
+                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Text('SE CONNECTER À L\'ESPACE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   TextButton(
-                    onPressed: () => context.push('/register'),
-                    child: const Text('Create an account'),
+                    onPressed: () => context.go('/register'),
+                    child: Text(
+                      "Créer un compte Cinéphile",
+                      style: TextStyle(color: accentGold, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
                   ),
+                  TextButton(
+                    onPressed: () => context.go('/forgot-password'),
+                    child: Text(
+                      "Mot de passe oublié ? Rétablir l'accès",
+                      style: TextStyle(fontSize: 12, color: textMuted, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  if (state.error != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6EDDA),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF86651F).withValues(alpha: 0.2)),
+                      ),
+                      child: Text(
+                        state.error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Color(0xFF96443C), fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ),
+                  ]
                 ],
               ),
             ),

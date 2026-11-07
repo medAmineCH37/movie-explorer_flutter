@@ -1,41 +1,44 @@
-
 import 'package:flutter/material.dart';
 
 class AppTheme {
   AppTheme._();
 
-  static const Color _seedColor = Color(0xFF8B5CF6);
+  static const Color bgIvory = Color(0xFFF5F3EE);
+  static const Color surfaceWhite = Color(0xFFFFFFFF);
+  static const Color borderSubtle = Color(0xFFDCD8D0);
+  static const Color textPrimary = Color(0xFF1B1B19);
+  static const Color accentGold = Color(0xFF8C692E);
 
-  static ThemeData get darkTheme {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: _seedColor,
-      brightness: Brightness.dark,
-    );
-
+  static ThemeData get cineaTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: const Color(0xFF101014),
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: bgIvory,
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF101014),
-        foregroundColor: Colors.white,
+        backgroundColor: surfaceWhite,
+        foregroundColor: textPrimary,
+        elevation: 0,
         centerTitle: false,
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF1B1B23),
+        color: surfaceWhite,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: Color(0xFF30303A)),
+          side: const BorderSide(color: borderSubtle),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF1B1B23),
-        border: OutlineInputBorder(
+        fillColor: surfaceWhite,
+        contentPadding: const EdgeInsets.all(16),
+        enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: borderSubtle),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: accentGold, width: 1.5),
         ),
       ),
     );
