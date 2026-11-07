@@ -331,6 +331,8 @@ class _HomePageState extends State<HomePage> {
                     onTap: () {
                       if (module.id == 'personal-collection') {
                         context.push('/collection');
+                      } else if (module.id == 'recommendations-custom-lists') {
+                        context.push('/for-you');
                       } else {
                         context.push('/module/${module.id}');
                       }
