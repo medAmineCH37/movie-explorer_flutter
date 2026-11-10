@@ -112,7 +112,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   SizedBox(
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: state.isLoading ? null : () async {
+                      onPressed: state.isLoading
+                          ? null
+                          : () async {
                         if (_formKey.currentState!.validate()) {
                           final router = GoRouter.of(context);
                           final ok = await ref.read(authProvider.notifier).register(
@@ -121,7 +123,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             _name.text.trim(),
                           );
 
-                          if (!mounted) return;
+                          if (!context.mounted) return;
 
                           if (ok) {
                             showDialog(
@@ -153,8 +155,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                       child: state.isLoading
-                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Text('CRÉER MON COMPTE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                          ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                          : const Text(
+                        'CRÉER MON COMPTE',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -181,7 +190,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         style: const TextStyle(color: Color(0xFF96443C), fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ),
-                  ]
+                  ],
                 ],
               ),
             ),

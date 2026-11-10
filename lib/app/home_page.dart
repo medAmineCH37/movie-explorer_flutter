@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:movie_explorer/core/widgets/cinea_app_bar.dart';
 
 import '../features/movie_management/data/models/movie.dart';
 import '../features/movie_management/data/services/tmdb_service.dart';
@@ -24,7 +25,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       title: 'User Management',
       description: 'Accounts, authentication and profiles',
       icon: Icons.person_outline,
-      adminOnly: true, // Restricted to administrators
+      adminOnly: true,
     ),
     _ModuleItem(
       id: 'movie-management',
@@ -76,110 +77,18 @@ class _HomePageState extends ConsumerState<HomePage> {
     });
   }
 
-  Future<void> _handleAccountTap() async {
-    final authState = ref.read(authProvider);
-    final user = authState.user;
-
-    if (user == null) {
-      if (mounted) {
-        context.push('/login');
-      }
-      return;
-    }
-
-    if (!mounted) return;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFFF5F3EE),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xFF1B1B19),
-                    foregroundColor: Colors.white,
-                    child: Icon(Icons.person),
-                  ),
-                  title: Text(
-                    user.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  subtitle: Text('${user.email} • Rôle: ${user.role.toUpperCase()}'),
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.account_box_outlined),
-                  title: const Text('Mon Profil CINEA'),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    context.push('/profile');
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: Color(0xFF96443C)),
-                  title: const Text('Se déconnecter', style: TextStyle(color: Color(0xFF96443C), fontWeight: FontWeight.bold)),
-                  onTap: () async {
-                    Navigator.of(sheetContext).pop();
-                    await ref.read(authProvider.notifier).logout();
-                    if (!mounted) return;
-                    context.go('/login');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Déconnexion réussie.')),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final authState = ref.watch(authProvider);
+    final isLoggedIn = authState.user != null;
     final isAdmin = authState.user?.role.toLowerCase() == 'admin';
 
-    // Filtrage dynamique des modules selon le rôle
+    // 🟢 Filtrage des modules selon le rôle administrateur
     final visibleModules = _allModules.where((m) => !m.adminOnly || isAdmin).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.movie_filter_outlined),
-            SizedBox(width: 10),
-            Text('Movie Explorer', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        actions: [
-          IconButton(
-            onPressed: () => context.push('/search'),
-            icon: const Icon(Icons.search),
-            tooltip: 'Search movies',
-          ),
-          IconButton(
-            onPressed: _handleAccountTap,
-            icon: Icon(
-              authState.user != null ? Icons.account_circle : Icons.account_circle_outlined,
-              color: authState.user != null ? const Color(0xFF8C692E) : null,
-            ),
-            tooltip: 'Account',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      appBar: const CineaAppBar(title: 'Movie Explorer'),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.only(bottom: 32),
@@ -272,66 +181,113 @@ class _HomePageState extends ConsumerState<HomePage> {
               },
             ),
             const SizedBox(height: 36),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Explore the app',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+
+            // 🟢 SECTION MODULES : Visible UNIQUEMENT si l'utilisateur est connecté
+            if (isLoggedIn) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Explore the app',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 16),
-              child: Text(
-                'Explore all the features of Movie Explorer.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 6, 20, 16),
+                child: Text(
+                  'Explore all the features of Movie Explorer.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+                ),
               ),
-            ),
-            ...visibleModules.map((module) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Card(
-                  elevation: 1,
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                    leading: CircleAvatar(
-                      backgroundColor: colors.primaryContainer,
-                      foregroundColor: colors.onPrimaryContainer,
-                      child: Icon(module.icon),
-                    ),
-                    title: Row(
-                      children: [
-                        Text(module.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        if (module.adminOnly) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF8C692E),
-                              borderRadius: BorderRadius.circular(6),
+              ...visibleModules.map((module) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Card(
+                    elevation: 1,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                      leading: CircleAvatar(
+                        backgroundColor: colors.primaryContainer,
+                        foregroundColor: colors.onPrimaryContainer,
+                        child: Icon(module.icon),
+                      ),
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              module.title,
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            child: const Text('ADMIN', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
                           ),
-                        ]
+                          if (module.adminOnly && isAdmin) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF8C692E),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'ADMIN',
+                                style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 5),
+                        child: Text(module.description),
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        if (module.id == 'personal-collection') {
+                          context.push('/collection');
+                        } else if (module.id == 'recommendations-custom-lists') {
+                          context.push('/ai-assistant');
+                        } else {
+                          context.push('/module/${module.id}');
+                        }
+                      },
+                    ),
+                  ),
+                );
+              }),
+            ] else ...[
+              // 🔒 BANDEAU D'INVITATION POUR UTILISATEURS NON CONNECTÉS
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Card(
+                  color: colors.surfaceContainerHighest,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      children: [
+                        Icon(Icons.lock_outline, size: 36, color: colors.primary),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Connectez-vous pour débloquer la gestion de votre collection et l\'assistant AI.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: colors.onSurfaceVariant, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () => context.push('/login'),
+                          icon: const Icon(Icons.login_rounded, size: 18),
+                          label: const Text('SE CONNECTER'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colors.primary,
+                            foregroundColor: colors.onPrimary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
                       ],
                     ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 5),
-                      child: Text(module.description),
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      if (module.id == 'personal-collection') {
-                        context.push('/collection');
-                      } else if (module.id == 'recommendations-custom-lists') {
-                        context.push('/ai-assistant');
-                      } else {
-                        context.push('/module/${module.id}');
-                      }
-                    },
                   ),
                 ),
-              );
-            }),
+              ),
+            ],
           ],
         ),
       ),

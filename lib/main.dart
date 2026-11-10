@@ -6,7 +6,6 @@ import 'app.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔐 Lecture sécurisée et anonyme depuis le fichier local env.json
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
@@ -17,10 +16,9 @@ Future<void> main() async {
     );
   }
 
-  // 🚀 Initialisation conforme sur votre projet dédié avec la propriété anonKey
   await Supabase.initialize(
     url: supabaseUrl,
-    anonKey: supabaseAnonKey,
+    publishableKey: supabaseAnonKey,
   );
 
   runApp(

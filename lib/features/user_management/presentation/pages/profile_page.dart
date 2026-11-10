@@ -141,6 +141,7 @@ class ProfilePage extends ConsumerWidget {
               onTap: () async {
                 final router = GoRouter.of(context);
                 await ref.read(authProvider.notifier).logout();
+                ref.invalidate(authProvider);
                 if (context.mounted) {
                   router.go('/login');
                 }

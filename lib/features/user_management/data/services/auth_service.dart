@@ -19,20 +19,38 @@ class AuthService implements AuthRepository {
     required String displayName,
   }) async {
     try {
+      final cleanEmail = email.trim();
+      final cleanName = displayName.trim();
+
       final response = await _client.auth.signUp(
-        email: email.trim(),
+        email: cleanEmail,
         password: password,
         data: {
-          'display_name': displayName.trim(),
+          'display_name': cleanName,
           'role': 'user',
-          'valide': false,         // En attente de validation par mail
-          'is_subscribed': false,  // Compte gratuit au départ
+          'valide': true,
+          'is_subscribed': false,
         },
         emailRedirectTo: 'io.supabase.cinea://login-callback/',
       );
 
-      if (response.session == null && response.user != null) {
-        debugPrint('Email de confirmation envoyé avec succès via Mailtrap.');
+      final user = response.user;
+      if (user != null) {
+        try {
+          await _client.from('profiles').upsert({
+            'id': user.id,
+            'email': cleanEmail,
+            'display_name': cleanName,
+            'username': cleanName,
+            'role': 'user',
+            'valide': true,
+            'is_subscribed': false,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          });
+        } catch (e) {
+          debugPrint('⚠️ Erreur upsert profil (colonne email à vérifier dans Supabase) : $e');
+        }
       }
 
       return response;
@@ -67,25 +85,21 @@ class AuthService implements AuthRepository {
         email.trim(),
         redirectTo: 'io.supabase.cinea://reset-password/',
       );
-      debugPrint('Lien de réinitialisation envoyé dans Mailtrap.');
     } on AuthException catch (e) {
       throw Exception(e.message);
     } catch (e) {
-      throw Exception('Erreur lors de l\'envoi du mail de réinitialisation : $e');
+      throw Exception('Erreur réinitialisation : $e');
     }
   }
 
   @override
   Future<void> updatePassword(String newPassword) async {
     try {
-      await _client.auth.updateUser(
-        UserAttributes(password: newPassword),
-      );
-      debugPrint('Mot de passe mis à jour avec succès.');
+      await _client.auth.updateUser(UserAttributes(password: newPassword));
     } on AuthException catch (e) {
       throw Exception(e.message);
     } catch (e) {
-      throw Exception('Erreur lors de la mise à jour du mot de passe : $e');
+      throw Exception('Erreur mise à jour mot de passe : $e');
     }
   }
 
@@ -94,7 +108,7 @@ class AuthService implements AuthRepository {
     await _client.auth.signOut();
   }
 
-  /// 🛡️ Récupération du profil public SÉCURISÉE (Conforme à votre UserModel)
+  @override
   Future<UserModel?> getProfile(String userId, String email) async {
     try {
       final data = await _client
@@ -106,10 +120,13 @@ class AuthService implements AuthRepository {
       if (data == null) {
         final newProfile = {
           'id': userId,
+          'email': email,
           'display_name': currentUser?.userMetadata?['display_name'] ?? 'Cinéphile',
           'role': 'user',
           'valide': true,
           'is_subscribed': false,
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
         };
 
         await _client.from('profiles').upsert(newProfile);
@@ -124,9 +141,12 @@ class AuthService implements AuthRepository {
         );
       }
 
-      return UserModel.fromJson(data, email);
+      final String profileEmail = (data['email'] as String?)?.isNotEmpty == true
+          ? (data['email'] as String)
+          : email;
+
+      return UserModel.fromJson(data, profileEmail);
     } catch (e) {
-      debugPrint('⚠️ Erreur lors du fetch de profil : $e');
       return UserModel(
         id: userId,
         email: email,
@@ -138,11 +158,67 @@ class AuthService implements AuthRepository {
     }
   }
 
-  /// Mise à jour de l'abonnement
+  @override
   Future<void> updateSubscription(String userId, bool nextState) async {
     await _client
         .from('profiles')
-        .update({'is_subscribed': nextState})
+        .update({'is_subscribed': nextState, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('id', userId);
+  }
+
+  @override
+  Future<List<UserModel>> getAllUsers() async {
+    try {
+      final response = await _client
+          .from('profiles')
+          .select()
+          .order('created_at', ascending: false);
+
+      final List<dynamic> data = response as List<dynamic>;
+
+      return data.map((json) {
+        final userEmail = (json['email'] as String?)?.isNotEmpty == true
+            ? json['email'] as String
+            : 'utilisateur@cinea.app';
+        return UserModel.fromJson(json, userEmail);
+      }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  @override
+  Future<UserModel?> getUserById(String userId) async {
+    try {
+      final data = await _client
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (data == null) return null;
+      final email = (data['email'] as String?)?.isNotEmpty == true
+          ? data['email'] as String
+          : 'utilisateur@cinea.app';
+      return UserModel.fromJson(data, email);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> toggleUserValidation(String userId, bool currentValideStatus) async {
+    await _client
+        .from('profiles')
+        .update({'valide': !currentValideStatus, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('id', userId);
+  }
+
+  @override
+  Future<void> updateUserRole(String userId, String nextRole) async {
+    await _client
+        .from('profiles')
+        .update({'role': nextRole.toLowerCase(), 'updated_at': DateTime.now().toIso8601String()})
         .eq('id', userId);
   }
 }

@@ -41,8 +41,18 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         _emailController.text.trim(),
         redirectTo: 'io.supabase.cinea://reset-password/',
       );
+
+      if (!mounted) return;
+
       setState(() {
-        _message = "✓ Un jeton de réinitialisation sécurisé a été projeté sur votre boîte Mailtrap.";
+        _message = "✓ Email d'activation envoyé dans votre boîte Mailtrap. Redirection dans 3 secondes...";
+      });
+
+      // 🟢 Redirection automatique vers la connexion après 3 secondes
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          context.go('/login');
+        }
       });
     } on AuthException catch (e) {
       setState(() => _error = e.message);
@@ -119,7 +129,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         width: 20,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
-                          : const Text('PROJETER LE LIEN', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                          : const Text('ENVOYER LE LIEN', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1)),
                     ),
                   ),
                   if (_error != null) ...[
@@ -141,7 +151,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   if (_message != null) ...[
                     const SizedBox(height: 16),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE8F2EB),
                         borderRadius: BorderRadius.circular(12),
@@ -151,6 +161,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         _message!,
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Color(0xFF2E6045), fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => context.go('/login'),
+                      icon: const Icon(Icons.arrow_back, size: 16),
+                      label: const Text('REVENIR DE SUITE À LA CONNEXION'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: accentGold,
+                        side: BorderSide(color: accentGold),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ],

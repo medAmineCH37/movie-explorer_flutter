@@ -13,7 +13,7 @@ class MovieExplorerApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'CINEA',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.cineaTheme, // Injection de la charte haut de gamme
+      theme: AppTheme.cineaTheme,
       routerConfig: goRouter,
     );
   }

@@ -43,6 +43,13 @@ class _AiAssistantRecommendationsPageState extends ConsumerState<AiAssistantReco
     });
   }
 
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
@@ -69,11 +76,13 @@ class _AiAssistantRecommendationsPageState extends ConsumerState<AiAssistantReco
 
     final aiResponse = await _aiService.askAssistant(message: text, currentUser: user);
 
-    setState(() {
-      _isTyping = false;
-      _messages.add({'sender': 'ai', 'text': aiResponse});
-    });
-    Future.delayed(const Duration(milliseconds: 50), _scrollToBottom);
+    if (mounted) {
+      setState(() {
+        _isTyping = false;
+        _messages.add({'sender': 'ai', 'text': aiResponse});
+      });
+      Future.delayed(const Duration(milliseconds: 50), _scrollToBottom);
+    }
   }
 
   @override
@@ -162,7 +171,7 @@ class _AiAssistantRecommendationsPageState extends ConsumerState<AiAssistantReco
               ),
             Container(
               padding: const EdgeInsets.all(16),
-              color: surfaceWhite, // 💡 CORRIGÉ : Propriété valide pour la couleur de fond
+              color: surfaceWhite,
               child: Row(
                 children: [
                   Expanded(

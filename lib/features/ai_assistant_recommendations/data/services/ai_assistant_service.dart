@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 import '../../../user_management/data/models/user_model.dart';
 
 class AiAssistantService {
   late final GenerativeModel _model;
-
   final Dio _dio = Dio();
 
   static const String _geminiKey =
@@ -22,12 +22,12 @@ class AiAssistantService {
     }
 
     _model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       apiKey: _geminiKey,
     );
   }
 
-  /// Récupère les films populaires depuis TMDB
+
   Future<List<String>> _fetchCatalogContext() async {
     if (_tmdbKey.isEmpty) {
       return [];
@@ -54,8 +54,7 @@ class AiAssistantService {
           String year = '';
           final releaseDate = movie['release_date'];
 
-          if (releaseDate != null &&
-              releaseDate.toString().isNotEmpty) {
+          if (releaseDate != null && releaseDate.toString().isNotEmpty) {
             year = releaseDate.toString().split('-').first;
           }
 
@@ -63,20 +62,18 @@ class AiAssistantService {
         }).toList();
       }
     } catch (e) {
-      print('Erreur TMDB : $e');
+      debugPrint('Erreur TMDB : $e');
     }
 
     return [];
   }
 
-  /// Envoie une question à Gemini avec contexte utilisateur + TMDB
   Future<String> askAssistant({
     required String message,
     required UserModel currentUser,
   }) async {
     try {
-      final List<String> realMovies =
-      await _fetchCatalogContext();
+      final List<String> realMovies = await _fetchCatalogContext();
 
       final String moviesContext = realMovies.isNotEmpty
           ? realMovies.take(5).join('\n')
@@ -102,13 +99,10 @@ Règles :
 ''';
 
       final response = await _model.generateContent([
-        Content.text(
-          '$systemPrompt\n\nQuestion utilisateur : $message',
-        ),
+        Content.text('$systemPrompt\n\nQuestion utilisateur : $message'),
       ]);
 
-      return response.text ??
-          "Je n'ai pas pu traiter votre demande.";
+      return response.text ?? "Je n'ai pas pu traiter votre demande.";
     } catch (e) {
       return 'Une erreur est survenue avec Gemini : $e';
     }
