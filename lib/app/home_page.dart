@@ -1,26 +1,30 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/movie_management/data/models/movie.dart';
+import '../features/movie_management/data/models/movie_category.dart';
 import '../features/movie_management/data/services/tmdb_service.dart';
+import '../features/movie_management/presentation/widgets/featured_movie_card.dart';
+import '../features/movie_management/presentation/widgets/movie_row_section.dart';
+import '../features/movie_management/presentation/widgets/movie_state_views.dart';
 import '../features/user_management/data/auth_service.dart';
 import '../features/user_management/domain/auth_repository.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, this.authService});
+  const HomePage({super.key, this.authService, this.tmdbService});
 
   final AuthRepository? authService;
+  final TmdbService? tmdbService;
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  final TmdbService _tmdbService = TmdbService();
+  late final TmdbService _tmdbService;
   late final AuthRepository _authService;
 
-  late Future<List<Movie>> _moviesFuture;
+  final Map<MovieCategory, Future<List<Movie>>> _categoryFutures = {};
 
   static const modules = <_ModuleItem>[
     _ModuleItem(
@@ -65,18 +69,29 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _authService = widget.authService ?? AuthService();
-    _moviesFuture = _tmdbService.getPopularMovies();
+    _tmdbService = widget.tmdbService ?? TmdbService();
+    for (final category in MovieCategory.values) {
+      _categoryFutures[category] = _loadCategory(category);
+    }
   }
 
   @override
   void dispose() {
-    _tmdbService.dispose();
+    if (widget.tmdbService == null) _tmdbService.dispose();
     super.dispose();
   }
 
-  void _retryLoadingMovies() {
+  /// Rows below the fold may not be built yet, so nothing listens to their
+  /// future; `ignore()` keeps a failure from becoming an unhandled error
+  /// while FutureBuilder still receives it once the row is shown.
+  Future<List<Movie>> _loadCategory(MovieCategory category) {
+    return _tmdbService.getMovies(category).then((page) => page.movies)
+      ..ignore();
+  }
+
+  void _retryCategory(MovieCategory category) {
     setState(() {
-      _moviesFuture = _tmdbService.getPopularMovies();
+      _categoryFutures[category] = _loadCategory(category);
     });
   }
 
@@ -147,6 +162,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  String _routeFor(String moduleId) {
+    return switch (moduleId) {
+      'personal-collection' => '/collection',
+      'movie-management' => '/movies',
+      _ => '/module/$moduleId',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -203,90 +226,54 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 20),
 
-            // Featured movie loaded from TMDB.
+            // Featured movie: the most popular title right now.
             FutureBuilder<List<Movie>>(
-              future: _moviesFuture,
+              future: _categoryFutures[MovieCategory.popular],
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const _FeaturedLoading();
-                }
-
-                if (snapshot.hasError) {
-                  return _LoadError(
-                    message: 'Could not load movies from TMDB.',
-                    onRetry: _retryLoadingMovies,
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: SkeletonBox(
+                      height: FeaturedMovieCard.height,
+                      radius: 24,
+                    ),
                   );
                 }
 
-                final movies = snapshot.data ?? [];
-
-                if (movies.isEmpty) {
-                  return const _EmptyMovies();
+                if (snapshot.hasError) {
+                  return MovieLoadError(
+                    message: 'Could not load movies from TMDB.',
+                    onRetry: () => _retryCategory(MovieCategory.popular),
+                  );
                 }
 
-                return _FeaturedMovie(movie: movies.first);
+                final movies = snapshot.data ?? const <Movie>[];
+                if (movies.isEmpty) {
+                  return const MovieEmptyState(
+                    message: 'No movies are available right now.',
+                  );
+                }
+
+                return FeaturedMovieCard(movie: movies.first);
               },
             ),
 
             const SizedBox(height: 32),
 
-            // Popular movie carousel.
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Popular Movies',
-                      style: Theme.of(context).textTheme.titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Icon(Icons.local_fire_department, color: colors.primary),
-                ],
+            // One carousel per TMDB catalogue list.
+            for (final category in MovieCategory.values) ...[
+              MovieRowSection(
+                title: category.label,
+                icon: category.icon,
+                future: _categoryFutures[category]!,
+                onRetry: () => _retryCategory(category),
+                onSeeAll: () =>
+                    context.push('/movies?category=${category.slug}'),
               ),
-            ),
-            const SizedBox(height: 14),
+              const SizedBox(height: 28),
+            ],
 
-            FutureBuilder<List<Movie>>(
-              future: _moviesFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const SizedBox(
-                    height: 220,
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return _LoadError(
-                    message: 'Popular movies could not be loaded.',
-                    onRetry: _retryLoadingMovies,
-                  );
-                }
-
-                final movies = snapshot.data ?? [];
-
-                if (movies.isEmpty) {
-                  return const _EmptyMovies();
-                }
-
-                return SizedBox(
-                  height: 250,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: movies.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 14),
-                    itemBuilder: (context, index) {
-                      return _MoviePosterCard(movie: movies[index]);
-                    },
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(height: 36),
+            const SizedBox(height: 8),
 
             // Preserve the six collective project modules.
             Padding(
@@ -328,13 +315,7 @@ class _HomePageState extends State<HomePage> {
                       child: Text(module.description),
                     ),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      if (module.id == 'personal-collection') {
-                        context.push('/collection');
-                      } else {
-                        context.push('/module/${module.id}');
-                      }
-                    },
+                    onTap: () => context.push(_routeFor(module.id)),
                   ),
                 ),
               ),
@@ -342,287 +323,6 @@ class _HomePageState extends State<HomePage> {
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _FeaturedMovie extends StatelessWidget {
-  const _FeaturedMovie({required this.movie});
-
-  final Movie movie;
-
-  @override
-  Widget build(BuildContext context) {
-    final imageUrl = movie.backdropUrl ?? movie.posterUrl;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => context.push('/movie/${movie.id}'),
-          borderRadius: BorderRadius.circular(24),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: SizedBox(
-              height: 350,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (imageUrl != null)
-                    CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, _, _) => const _ImageFallback(),
-                    )
-                  else
-                    const _ImageFallback(),
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Color(0x55000000),
-                          Color(0xF0000000),
-                        ],
-                        stops: [0.15, 0.48, 1],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 20,
-                    right: 20,
-                    bottom: 22,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'POPULAR RIGHT NOW',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          movie.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.headlineMedium
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.star_rounded,
-                              color: Color(0xFFFFC857),
-                              size: 20,
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              movie.voteAverage.toStringAsFixed(1),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            if (movie.releaseDate.isNotEmpty) ...[
-                              const SizedBox(width: 12),
-                              Text(
-                                movie.releaseDate.split('-').first,
-                                style: const TextStyle(color: Colors.white70),
-                              ),
-                            ],
-                          ],
-                        ),
-                        if (movie.overview.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            movie.overview,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MoviePosterCard extends StatelessWidget {
-  const _MoviePosterCard({required this.movie});
-
-  final Movie movie;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 140,
-      child: InkWell(
-        onTap: () => context.push('/movie/${movie.id}'),
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: movie.posterUrl == null
-                      ? const _ImageFallback()
-                      : CachedNetworkImage(
-                          imageUrl: movie.posterUrl!,
-                          fit: BoxFit.cover,
-                          placeholder: (_, _) =>
-                              const _ImageFallback(loading: true),
-                          errorWidget: (_, _, _) => const _ImageFallback(),
-                        ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              movie.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(
-                  Icons.star_rounded,
-                  color: Color(0xFFFFC857),
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  movie.voteAverage.toStringAsFixed(1),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                if (movie.releaseDate.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      movie.releaseDate.split('-').first,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FeaturedLoading extends StatelessWidget {
-  const _FeaturedLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 350,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: const Center(child: CircularProgressIndicator()),
-    );
-  }
-}
-
-class _LoadError extends StatelessWidget {
-  const _LoadError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          const Icon(Icons.cloud_off_outlined, size: 36),
-          const SizedBox(height: 8),
-          Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 10),
-          OutlinedButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Try again'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyMovies extends StatelessWidget {
-  const _EmptyMovies();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.all(24),
-      child: Center(child: Text('No movies are available right now.')),
-    );
-  }
-}
-
-class _ImageFallback extends StatelessWidget {
-  const _ImageFallback({this.loading = false});
-
-  final bool loading;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      alignment: Alignment.center,
-      child: Icon(
-        loading ? Icons.image_outlined : Icons.movie_outlined,
-        size: 36,
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
     );
   }
