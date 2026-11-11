@@ -24,9 +24,19 @@ The application is being developed collaboratively in separate feature modules. 
   - Add or remove movies directly from the Movie Details page.
   - Refresh collection data when navigating back from movie details.
 
+- **Movie Management**
+  - Popular, top-rated, now-playing and upcoming lists from TMDB, with a featured movie on the home screen.
+  - Catalogue screen with one tab per list and infinite scrolling.
+  - Movie details with cast, directors, trailer, runtime, language and TMDB rating.
+- **Ratings & Reviews**
+  - 1–5 star ratings (Mauvais to Chef-d'œuvre) with a community average, vote count and distribution.
+  - One review per user and movie, with a spoiler flag, likes, reports and an edited indicator.
+  - Full review list with four sorts and 10 reviews per page.
+  - My ratings & reviews screen with personal statistics.
+  - AI review drafting and AI review summaries (Gemini, through a Supabase Edge Function).
+
 ### Planned / In Development
 
-- Ratings and Reviews Management.
 - Movie Discovery Management.
 - Recommendations and Custom Lists Management.
 
@@ -111,6 +121,19 @@ Each team member must configure their own local `env.json` before running the ap
 4. Confirm that the required tables, trigger, and Row Level Security policies exist.
 
 The project must use a compatible schema before features that store user data can work.
+
+Then run the migrations in `supabase/migrations/` in date order. `20261111_ratings_reviews.sql` creates the Ratings & Reviews tables (`ratings`, `review_likes`, `review_reports`, `review_summaries`), their policies and read functions, and migrates the old `reviews` table: each 1–10 rating becomes a 1–5 rating, rounded up. It can safely be run more than once.
+
+### 4b. Deploy the AI review assistant (optional)
+
+AI review drafts and AI review summaries run in the `review-ai` Supabase Edge Function. The Gemini key stays on the server and never ships in the app.
+
+```bash
+supabase secrets set GEMINI_API_KEY=your-gemini-key TMDB_API_KEY=your-tmdb-key
+supabase functions deploy review-ai --no-verify-jwt
+```
+
+`--no-verify-jwt` is required because the app's publishable key is not a JWT. The function checks the user itself for drafts, and summaries are public. `GEMINI_MODELS` (comma-separated) optionally overrides the model fallback chain. Without the function, everything else in Ratings & Reviews still works, and the AI buttons show an "unavailable" message.
 
 ### 5. Run the application
 

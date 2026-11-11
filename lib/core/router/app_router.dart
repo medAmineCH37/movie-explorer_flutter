@@ -10,6 +10,8 @@ import '../../features/movie_discovery/presentation/pages/movie_search_page.dart
 import '../../features/user_management/presentation/pages/login_page.dart';
 import '../../features/user_management/presentation/pages/register_page.dart';
 import '../../features/personal_collection/presentation/pages/collection_page.dart';
+import '../../features/ratings_reviews/presentation/pages/all_reviews_page.dart';
+import '../../features/ratings_reviews/presentation/pages/my_ratings_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -43,6 +45,24 @@ final appRouter = GoRouter(
 
         return MovieDetailsPage(movieId: movieId);
       },
+      routes: [
+        GoRoute(
+          path: 'reviews',
+          builder: (context, state) {
+            final movieId = int.tryParse(state.pathParameters['movieId'] ?? '');
+            if (movieId == null) {
+              return const Scaffold(
+                body: Center(child: Text('Invalid movie ID')),
+              );
+            }
+            return AllReviewsPage(movieId: movieId);
+          },
+        ),
+      ],
+    ),
+    GoRoute(
+      path: '/my-ratings',
+      builder: (context, state) => const MyRatingsPage(),
     ),
     GoRoute(
       path: '/module/:moduleId',

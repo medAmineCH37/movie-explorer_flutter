@@ -125,6 +125,14 @@ class _HomePageState extends State<HomePage> {
                   title: Text(user.email ?? 'No email available'),
                 ),
                 ListTile(
+                  leading: const Icon(Icons.star_outline),
+                  title: const Text('My ratings & reviews'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.push('/my-ratings');
+                  },
+                ),
+                ListTile(
                   leading: const Icon(Icons.logout),
                   title: const Text('Sign out'),
                   onTap: () async {
@@ -166,6 +174,7 @@ class _HomePageState extends State<HomePage> {
     return switch (moduleId) {
       'personal-collection' => '/collection',
       'movie-management' => '/movies',
+      'ratings-reviews' => '/my-ratings',
       _ => '/module/$moduleId',
     };
   }

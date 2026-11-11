@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../personal_collection/presentation/widgets/movie_collection_actions.dart';
+import '../../../ratings_reviews/presentation/widgets/movie_reviews_section.dart';
 import '../../data/models/movie_details.dart';
 import '../../data/services/tmdb_service.dart';
 import '../movie_formatters.dart';
@@ -161,6 +162,8 @@ class _DetailsView extends StatelessWidget {
               _Facts(details: details),
               const _SectionTitle('My Collection'),
               MovieCollectionActions(movieId: movie.id),
+              const _SectionTitle('Ratings & reviews'),
+              MovieReviewsSection(movie: movie),
             ],
           ),
         ),
