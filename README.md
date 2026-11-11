@@ -2,7 +2,7 @@
 
 A Flutter application for discovering movies, exploring movie details, searching a movie catalogue, and managing personalized movie experiences.
 
-Developed as a team project using Flutter, the TMDB API, and Supabase.
+Developed as a team project using Flutter and Supabase. The movie catalogue is stored in Supabase and seeded with 100 movies from TMDB.
 
 ## Project Status
 
@@ -12,7 +12,7 @@ The application is being developed collaboratively in separate feature modules. 
 
 ### Implemented
 
-- Browse popular movies from TMDB.
+- Browse the movie catalogue stored in Supabase.
 - Search movies and view movie details.
 - Register, sign in, and sign out using Supabase Authentication.
 - Store application data in Supabase.
@@ -25,9 +25,14 @@ The application is being developed collaboratively in separate feature modules. 
   - Refresh collection data when navigating back from movie details.
 
 - **Movie Management**
-  - Popular, top-rated, now-playing and upcoming lists from TMDB, with a featured movie on the home screen.
+  - Movie catalogue stored in Supabase (`movies`, `genres`, `movie_genres`, `movie_credits`), seeded with 100 movies from TMDB.
+  - Add, edit and delete movies (any signed-in user): title, dates, runtime, language, status, rating, genres, synopsis, poster/backdrop, trailer, directors and cast.
+  - Popular, top-rated, now-playing and upcoming lists, with a featured movie on the home screen.
   - Catalogue screen with one tab per list and infinite scrolling.
-  - Movie details with cast, directors, trailer, runtime, language and TMDB rating.
+  - Movie details with cast, directors, trailer, runtime, language and catalogue rating.
+- **Movie Discovery**
+  - Search by title, filter by genres, release years, minimum rating and language, sort by popularity, rating, date or title.
+  - Edit or delete movies straight from the results, and add new ones.
 - **Ratings & Reviews**
   - 1–5 star ratings (Mauvais to Chef-d'œuvre) with a community average, vote count and distribution.
   - One review per user and movie, with a spoiler flag, likes, reports and an edited indicator.
@@ -37,13 +42,12 @@ The application is being developed collaboratively in separate feature modules. 
 
 ### Planned / In Development
 
-- Movie Discovery Management.
 - Recommendations and Custom Lists Management.
 
 ## Technology Stack
 
 - **Frontend:** Flutter and Dart
-- **Movie catalogue:** TMDB API
+- **Movie catalogue:** Supabase (sample data from TMDB)
 - **Backend services and database:** Supabase
 - **Navigation:** GoRouter
 - **State management:** Riverpod
@@ -69,7 +73,7 @@ Install the following before running the project:
 - Flutter SDK and Dart SDK
 - Android Studio or another supported Flutter development environment
 - Git
-- A TMDB API key
+- A TMDB API key (only to regenerate the sample movies)
 - A Supabase project with the required database schema
 
 Verify your Flutter installation:
@@ -95,7 +99,7 @@ flutter pub get
 
 ### 3. Configure environment variables
 
-The project uses a local environment file for TMDB and Supabase credentials.
+The project uses a local environment file for Supabase credentials (and the TMDB key used by the seed tool).
 
 1. Copy the example configuration file:
 
@@ -105,7 +109,7 @@ The project uses a local environment file for TMDB and Supabase credentials.
 
 2. Open `env.json` and replace the placeholder values with your credentials:
 
-   - `TMDB_API_KEY`: Your TMDB API key.
+   - `TMDB_API_KEY`: Your TMDB API key. Only `tool/generate_movie_seed.dart` uses it; the app does not call TMDB.
    - `SUPABASE_URL`: Your Supabase project URL.
    - `SUPABASE_ANON_KEY`: Your Supabase publishable or anon key, as expected by the project.
 
@@ -124,12 +128,18 @@ The project must use a compatible schema before features that store user data ca
 
 Then run the migrations in `supabase/migrations/` in date order. `20261111_ratings_reviews.sql` creates the Ratings & Reviews tables (`ratings`, `review_likes`, `review_reports`, `review_summaries`), their policies and read functions, and migrates the old `reviews` table: each 1–10 rating becomes a 1–5 rating, rounded up. It can safely be run more than once.
 
+Then run `20261112_movies_catalogue.sql` and load the sample catalogue with `supabase/seed/movies_seed.sql` (100 movies, their genres, directors and cast). Both are safe to run again. To refresh the sample data from TMDB:
+
+```bash
+dart run tool/generate_movie_seed.dart
+```
+
 ### 4b. Deploy the AI review assistant (optional)
 
 AI review drafts and AI review summaries run in the `review-ai` Supabase Edge Function. The Gemini key stays on the server and never ships in the app.
 
 ```bash
-supabase secrets set GEMINI_API_KEY=your-gemini-key TMDB_API_KEY=your-tmdb-key
+supabase secrets set GEMINI_API_KEY=your-gemini-key
 supabase functions deploy review-ai --no-verify-jwt
 ```
 

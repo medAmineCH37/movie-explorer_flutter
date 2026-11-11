@@ -1,15 +1,15 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../movie_management/data/models/movie.dart';
-import '../../../movie_management/data/services/tmdb_service.dart';
+import '../../../movie_management/data/repositories/supabase_movies_repository.dart';
 import '../../data/repositories/reviews_repository_impl.dart';
 import '../../domain/models/review.dart';
 import '../../domain/models/review_activity.dart';
 import '../../domain/repositories/reviews_repository.dart';
 
-/// Loads movie metadata for activity items. Returns `null` when the movie
-/// no longer exists on TMDB, so the item can still be managed.
-typedef MovieLookup = Future<Movie?> Function(int movieId);
+/// Loads catalogue movies for activity items, keyed by id. Ids missing from
+/// the result were deleted from the catalogue; the items stay manageable.
+typedef MovieLookup = Future<Map<int, Movie>> Function(List<int> movieIds);
 
 /// "My ratings & reviews" screen state.
 class MyRatingsController extends ChangeNotifier {
@@ -18,7 +18,6 @@ class MyRatingsController extends ChangeNotifier {
 
   final ReviewsRepository _repository;
   MovieLookup? lookup;
-  TmdbService? _ownedTmdb;
 
   List<ReviewActivity> items = [];
   final Map<int, Movie?> movies = {};
@@ -36,17 +35,8 @@ class MyRatingsController extends ChangeNotifier {
   ReviewsRepository get repository => _repository;
   bool get isSignedIn => _repository.currentUserId != null;
 
-  MovieLookup get _movieLookup {
-    return lookup ??= (id) async {
-      final tmdb = _ownedTmdb ??= TmdbService();
-      try {
-        return Movie.fromJson(await tmdb.getMovieDetails(id));
-      } on TmdbException catch (e) {
-        if (e.isNotFound) return null;
-        rethrow;
-      }
-    };
-  }
+  MovieLookup get _movieLookup =>
+      lookup ??= SupabaseMoviesRepository().getMoviesByIds;
 
   Future<void> load() async {
     if (!isSignedIn) {
@@ -161,16 +151,16 @@ class MyRatingsController extends ChangeNotifier {
         .map((i) => i.movieId)
         .where((id) => !movies.containsKey(id))
         .toList();
-    await Future.wait(
-      missing.map((id) async {
-        try {
-          movies[id] = await _movieLookup(id);
-        } catch (_) {
-          // Network error: leave it unknown so the card shows a placeholder
-          // without claiming the movie was removed.
-        }
-      }),
-    );
+    if (missing.isEmpty) return;
+    try {
+      final found = await _movieLookup(missing);
+      for (final id in missing) {
+        movies[id] = found[id];
+      }
+    } catch (_) {
+      // Network error: leave them unknown so the cards show a placeholder
+      // without claiming the movies were removed.
+    }
   }
 
   void _notify() {
@@ -180,7 +170,6 @@ class MyRatingsController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
-    _ownedTmdb?.dispose();
     super.dispose();
   }
 }

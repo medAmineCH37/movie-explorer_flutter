@@ -1,75 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:movie_explorer/features/movie_management/data/models/movie_category.dart';
-import 'package:movie_explorer/features/movie_management/data/services/tmdb_service.dart';
+import 'package:movie_explorer/features/movie_management/domain/repositories/movies_repository.dart';
 import 'package:movie_explorer/features/movie_management/presentation/pages/movie_catalog_page.dart';
 
-import 'tmdb_fixtures.dart';
+import 'fake_movies_repository.dart';
 
 void main() {
   testWidgets('catalogue opens on the requested list and switches tabs', (
     tester,
   ) async {
-    final requested = <String>[];
-    final service = TmdbService(
-      apiKey: 'k',
-      client: fakeTmdb((request) {
-        final slug = request.url.pathSegments.last;
-        requested.add(slug);
-        final base = slug == 'upcoming' ? 500 : 100;
-        return (
-          200,
-          {
-            'page': 1,
-            'total_pages': 1,
-            'results': [
-              for (final id in [base + 1, base + 2])
-                {...movieJson(id), 'poster_path': null, 'title': '$slug $id'},
-            ],
-          },
-        );
-      }),
+    final repo = FakeMoviesRepository(
+      movies: [
+        FakeMovie(id: 1, title: 'Alpha'),
+        FakeMovie(id: 2, title: 'Beta'),
+      ],
     );
 
     await tester.pumpWidget(
       MaterialApp(
         home: MovieCatalogPage(
           initialCategory: MovieCategory.topRated,
-          tmdbService: service,
+          repository: repo,
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(requested, ['top_rated']);
-    expect(find.text('top_rated 101'), findsOneWidget);
+    expect(repo.calls, ['search:top_rated:1']);
+    expect(find.text('Alpha'), findsOneWidget);
     expect(find.text("You've reached the end of this list."), findsOneWidget);
+    expect(find.text('Add movie'), findsOneWidget);
 
     await tester.tap(find.text('Upcoming'));
     await tester.pumpAndSettle();
-
-    expect(requested, contains('upcoming'));
-    expect(find.text('upcoming 501'), findsOneWidget);
+    expect(repo.calls, contains('search:upcoming:1'));
   });
 
   testWidgets('catalogue shows an error with retry', (tester) async {
-    var fail = true;
-    final service = TmdbService(
-      apiKey: 'k',
-      client: fakeTmdb(
-        (_) => fail ? (500, {}) : (200, pageJson([1], totalPages: 1)),
-      ),
-    );
+    final repo = FakeMoviesRepository(movies: [FakeMovie(id: 1, title: 'A')])
+      ..failWith = const MovieException('Offline');
 
     await tester.pumpWidget(
-      MaterialApp(home: MovieCatalogPage(tmdbService: service)),
+      MaterialApp(home: MovieCatalogPage(repository: repo)),
     );
     await tester.pumpAndSettle();
     expect(find.text('Could not load popular movies.'), findsOneWidget);
 
-    fail = false;
+    repo.failWith = null;
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
-    expect(find.text('Movie 1'), findsOneWidget);
+    expect(find.text('A'), findsOneWidget);
+  });
+
+  testWidgets('adding a movie while signed out asks to sign in', (
+    tester,
+  ) async {
+    final repo = FakeMoviesRepository(userId: null);
+    await tester.pumpWidget(
+      MaterialApp(home: MovieCatalogPage(repository: repo)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add movie'));
+    await tester.pump();
+    expect(find.text('Sign in to manage movies.'), findsOneWidget);
   });
 }

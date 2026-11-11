@@ -1,146 +1,136 @@
+import 'genre.dart';
+import 'languages.dart';
 import 'movie.dart';
 
-/// Full movie record from `/movie/{id}?append_to_response=credits,videos`.
+/// Full movie record: `movies` row with embedded genres and credits.
 class MovieDetails {
   const MovieDetails({
     required this.movie,
+    this.originalTitle = '',
     this.tagline = '',
-    this.status = '',
-    this.languageName,
+    this.status = 'Released',
+    this.genres = const [],
     this.cast = const [],
     this.directors = const [],
     this.trailer,
+    this.createdBy,
   });
 
+  /// PostgREST `select` for [MovieDetails.fromJson].
+  static const String selectColumns =
+      '*, movie_genres(genres(id, name)), '
+      'movie_credits(kind, name, character, profile_url, position)';
+
   final Movie movie;
+  final String originalTitle;
   final String tagline;
   final String status;
-
-  /// English name of the original language, when TMDB provides it.
-  final String? languageName;
+  final List<Genre> genres;
   final List<CastMember> cast;
   final List<String> directors;
   final MovieVideo? trailer;
 
+  /// User who added the movie in the app (`null` for seeded movies).
+  final String? createdBy;
+
   int get id => movie.id;
 
-  static const int maxCast = 15;
+  String? get languageName {
+    final code = movie.originalLanguage;
+    return code == null ? null : Languages.nameOf(code);
+  }
 
   factory MovieDetails.fromJson(Map<String, dynamic> json) {
-    final movie = Movie.fromJson(json);
-    final credits = json['credits'] as Map<String, dynamic>? ?? const {};
-    final crew = credits['crew'] as List<dynamic>? ?? const [];
-    final cast = credits['cast'] as List<dynamic>? ?? const [];
-    final videos =
-        (json['videos'] as Map<String, dynamic>?)?['results']
-            as List<dynamic>? ??
-        const [];
-    final spokenLanguages =
-        json['spoken_languages'] as List<dynamic>? ?? const [];
+    final genres = <Genre>[
+      for (final link in json['movie_genres'] as List? ?? const [])
+        if (link is Map && link['genres'] is Map)
+          Genre.fromJson(Map<String, dynamic>.from(link['genres'] as Map)),
+    ]..sort((a, b) => a.name.compareTo(b.name));
 
-    String? languageName;
-    for (final language in spokenLanguages.cast<Map<String, dynamic>>()) {
-      if (language['iso_639_1'] == movie.originalLanguage) {
-        final name = language['english_name'] as String?;
-        if (name != null && name.isNotEmpty) languageName = name;
-        break;
-      }
-    }
+    final credits =
+        (json['movie_credits'] as List? ?? const [])
+            .map((c) => Map<String, dynamic>.from(c as Map))
+            .toList()
+          ..sort(
+            (a, b) => ((a['position'] as num?) ?? 0).compareTo(
+              (b['position'] as num?) ?? 0,
+            ),
+          );
 
-    final directors = <String>[];
-    for (final member in crew.cast<Map<String, dynamic>>()) {
-      final name = member['name'] as String?;
-      if (member['job'] == 'Director' &&
-          name != null &&
-          !directors.contains(name)) {
-        directors.add(name);
-      }
-    }
+    final movie = Movie.fromJson({
+      ...json,
+      'genres': [for (final g in genres) g.name],
+    });
+    final trailerKey = json['trailer_youtube_key'] as String?;
 
     return MovieDetails(
       movie: movie,
+      originalTitle: json['original_title'] as String? ?? '',
       tagline: (json['tagline'] as String? ?? '').trim(),
-      status: json['status'] as String? ?? '',
-      languageName: languageName,
-      cast: cast
-          .cast<Map<String, dynamic>>()
-          .take(maxCast)
-          .map(CastMember.fromJson)
-          .toList(),
-      directors: directors,
-      trailer: MovieVideo.pickTrailer(
-        videos.cast<Map<String, dynamic>>().map(MovieVideo.fromJson).toList(),
-      ),
+      status: json['status'] as String? ?? 'Released',
+      genres: genres,
+      directors: [
+        for (final c in credits)
+          if (c['kind'] == 'director') c['name'] as String,
+      ],
+      cast: [
+        for (final c in credits)
+          if (c['kind'] == 'cast') CastMember.fromJson(c),
+      ],
+      trailer: trailerKey == null || trailerKey.isEmpty
+          ? null
+          : MovieVideo(key: trailerKey),
+      createdBy: json['created_by'] as String?,
     );
   }
 }
 
 class CastMember {
-  const CastMember({
-    required this.id,
-    required this.name,
-    this.character = '',
-    this.profilePath,
-  });
+  const CastMember({required this.name, this.character = '', this.profileUrl});
 
-  final int id;
   final String name;
   final String character;
-  final String? profilePath;
-
-  String? get profileUrl {
-    if (profilePath == null || profilePath!.isEmpty) return null;
-    return 'https://image.tmdb.org/t/p/w185$profilePath';
-  }
+  final String? profileUrl;
 
   factory CastMember.fromJson(Map<String, dynamic> json) => CastMember(
-    id: (json['id'] as num?)?.toInt() ?? 0,
     name: json['name'] as String? ?? 'Unknown',
     character: json['character'] as String? ?? '',
-    profilePath: json['profile_path'] as String?,
+    profileUrl: json['profile_url'] as String?,
   );
 }
 
+/// A YouTube trailer.
 class MovieVideo {
-  const MovieVideo({
-    required this.key,
-    required this.name,
-    required this.site,
-    required this.type,
-    this.official = false,
-  });
+  const MovieVideo({required this.key});
 
   final String key;
-  final String name;
-  final String site;
-  final String type;
-  final bool official;
 
   Uri get watchUrl => Uri.parse('https://www.youtube.com/watch?v=$key');
 
-  factory MovieVideo.fromJson(Map<String, dynamic> json) => MovieVideo(
-    key: json['key'] as String? ?? '',
-    name: json['name'] as String? ?? '',
-    site: json['site'] as String? ?? '',
-    type: json['type'] as String? ?? '',
-    official: json['official'] as bool? ?? false,
-  );
+  static final RegExp _keyPattern = RegExp(r'^[A-Za-z0-9_-]{6,20}$');
 
-  /// Best YouTube video to show as "the trailer": official trailers first,
-  /// then any trailer, then teasers. Returns `null` when none is playable.
-  static MovieVideo? pickTrailer(List<MovieVideo> videos) {
-    int rank(MovieVideo v) {
-      if (v.site != 'YouTube' || v.key.isEmpty) return 99;
-      if (v.type == 'Trailer') return v.official ? 0 : 1;
-      if (v.type == 'Teaser') return v.official ? 2 : 3;
-      return 99;
-    }
+  /// Extracts the video key from a YouTube URL (watch, youtu.be, embed,
+  /// shorts) or returns [input] when it already is a key. `null` if invalid.
+  static String? parseKey(String input) {
+    final text = input.trim();
+    if (text.isEmpty) return null;
+    if (_keyPattern.hasMatch(text)) return text;
 
-    // First video with the best rank (keeps TMDB order among equals).
-    MovieVideo? best;
-    for (final video in videos) {
-      if (rank(video) < (best == null ? 99 : rank(best))) best = video;
+    final uri = Uri.tryParse(text.contains('://') ? text : 'https://$text');
+    if (uri == null) return null;
+    final host = uri.host.replaceFirst('www.', '').replaceFirst('m.', '');
+    String? key;
+    if (host == 'youtu.be' && uri.pathSegments.isNotEmpty) {
+      key = uri.pathSegments.first;
+    } else if (host == 'youtube.com' || host == 'music.youtube.com') {
+      final segments = uri.pathSegments;
+      if (segments.isNotEmpty && segments.first == 'watch') {
+        key = uri.queryParameters['v'];
+      } else if (segments.length >= 2 &&
+          const {'embed', 'shorts', 'v', 'live'}.contains(segments.first)) {
+        key = segments[1];
+      }
     }
-    return best;
+    return key != null && _keyPattern.hasMatch(key) ? key : null;
   }
 }

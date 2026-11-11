@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../movie_management/data/models/movie.dart';
-import '../../../movie_management/data/services/tmdb_service.dart';
+import '../../../movie_management/data/repositories/supabase_movies_repository.dart';
+import '../../../movie_management/domain/repositories/movies_repository.dart';
 import '../../../movie_management/presentation/widgets/movie_poster_image.dart';
 import '../../domain/models/review_sort.dart';
 import '../../domain/repositories/reviews_repository.dart';
@@ -16,12 +17,12 @@ class AllReviewsPage extends StatefulWidget {
     super.key,
     required this.movieId,
     this.repository,
-    this.tmdbService,
+    this.moviesRepository,
   });
 
   final int movieId;
   final ReviewsRepository? repository;
-  final TmdbService? tmdbService;
+  final MoviesRepository? moviesRepository;
 
   @override
   State<AllReviewsPage> createState() => _AllReviewsPageState();
@@ -29,7 +30,6 @@ class AllReviewsPage extends StatefulWidget {
 
 class _AllReviewsPageState extends State<AllReviewsPage> {
   late final AllReviewsController _controller;
-  late final TmdbService _tmdb;
   final ScrollController _scroll = ScrollController();
   Movie? _movie;
 
@@ -40,14 +40,14 @@ class _AllReviewsPageState extends State<AllReviewsPage> {
       movieId: widget.movieId,
       repository: widget.repository,
     )..load();
-    _tmdb = widget.tmdbService ?? TmdbService();
     _loadMovie();
   }
 
   Future<void> _loadMovie() async {
     try {
-      final json = await _tmdb.getMovieDetails(widget.movieId);
-      if (mounted) setState(() => _movie = Movie.fromJson(json));
+      final movies = widget.moviesRepository ?? SupabaseMoviesRepository();
+      final found = await movies.getMoviesByIds([widget.movieId]);
+      if (mounted) setState(() => _movie = found[widget.movieId]);
     } catch (_) {
       // The reviews stay usable without movie metadata.
     }
@@ -56,7 +56,6 @@ class _AllReviewsPageState extends State<AllReviewsPage> {
   @override
   void dispose() {
     _controller.dispose();
-    if (widget.tmdbService == null) _tmdb.dispose();
     _scroll.dispose();
     super.dispose();
   }

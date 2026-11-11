@@ -291,6 +291,8 @@ class ReviewsRepositoryImpl implements ReviewsRepository {
         return 'Some values are not valid. Check the text length and try again.';
       case '42501':
         return 'You are not allowed to do this.';
+      case 'P0002':
+        return 'This movie is no longer in the catalogue.';
       case 'PGRST301':
       case 'PGRST303':
         return 'Your session expired. Sign in again.';

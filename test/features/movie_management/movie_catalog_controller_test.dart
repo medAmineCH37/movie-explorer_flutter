@@ -1,95 +1,62 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:movie_explorer/features/movie_management/data/models/movie_category.dart';
-import 'package:movie_explorer/features/movie_management/data/services/tmdb_service.dart';
+import 'package:movie_explorer/features/movie_management/domain/repositories/movies_repository.dart';
 import 'package:movie_explorer/features/movie_management/presentation/controllers/movie_catalog_controller.dart';
-import 'package:movie_explorer/features/movie_management/presentation/movie_formatters.dart';
 
-import 'tmdb_fixtures.dart';
+import 'fake_movies_repository.dart';
 
 void main() {
-  group('MovieCatalogController', () {
-    test(
-      'loads pages, removes duplicates and stops at the last page',
-      () async {
-        final pages = {
-          '1': pageJson([1, 2, 3], page: 1, totalPages: 2),
-          '2': pageJson([3, 4], page: 2, totalPages: 2),
-        };
-        final controller = MovieCatalogController(
-          category: MovieCategory.topRated,
-          tmdbService: TmdbService(
-            apiKey: 'k',
-            client: fakeTmdb(
-              (r) => (200, pages[r.url.queryParameters['page']]!),
-            ),
-          ),
-        );
+  FakeMoviesRepository repoWith(int count) => FakeMoviesRepository(
+    movies: [
+      for (var i = 1; i <= count; i++)
+        FakeMovie(id: i, title: 'Movie $i', popularity: 1000.0 - i),
+    ],
+  );
 
-        await controller.loadInitial();
-        expect(controller.movies.map((m) => m.id), [1, 2, 3]);
-        expect(controller.hasMore, isTrue);
-
-        await controller.loadMore();
-        expect(controller.movies.map((m) => m.id), [1, 2, 3, 4]);
-        expect(controller.hasMore, isFalse);
-
-        await controller.loadMore();
-        expect(controller.movies, hasLength(4));
-        controller.dispose();
-      },
+  test('loads pages until the last one', () async {
+    final repo = repoWith(25);
+    final c = MovieCatalogController(
+      category: MovieCategory.popular,
+      repository: repo,
     );
 
-    test('exposes a readable error when the first page fails', () async {
-      final controller = MovieCatalogController(
-        category: MovieCategory.upcoming,
-        tmdbService: TmdbService(
-          apiKey: 'k',
-          client: fakeTmdb((_) => (500, {})),
-        ),
-      );
+    await c.loadInitial();
+    expect(c.movies, hasLength(20));
+    expect(c.movies.first.id, 1);
+    expect(c.hasMore, isTrue);
 
-      await controller.loadInitial();
+    await c.loadMore();
+    expect(c.movies, hasLength(25));
+    expect(c.hasMore, isFalse);
 
-      expect(controller.error, 'Could not load upcoming movies.');
-      expect(controller.isLoading, isFalse);
-      expect(controller.movies, isEmpty);
-      controller.dispose();
-    });
-
-    test('keeps loaded movies when a later page fails', () async {
-      var calls = 0;
-      final controller = MovieCatalogController(
-        category: MovieCategory.popular,
-        tmdbService: TmdbService(
-          apiKey: 'k',
-          client: fakeTmdb((_) {
-            calls++;
-            return calls == 1 ? (200, pageJson([1, 2])) : (503, {});
-          }),
-        ),
-      );
-
-      await controller.loadInitial();
-      await controller.loadMore();
-
-      expect(controller.movies, hasLength(2));
-      expect(controller.loadMoreError, isNotNull);
-      expect(controller.isLoadingMore, isFalse);
-      controller.dispose();
-    });
+    await c.loadMore();
+    expect(repo.calls, ['search:popular:1', 'search:popular:2']);
+    c.dispose();
   });
 
-  group('MovieFormatters', () {
-    test('formats runtime, counts and dates', () {
-      expect(MovieFormatters.runtime(148), '2h 28m');
-      expect(MovieFormatters.runtime(45), '45m');
-      expect(MovieFormatters.runtime(120), '2h');
-      expect(MovieFormatters.runtime(0), isNull);
-      expect(MovieFormatters.compactCount(999), '999');
-      expect(MovieFormatters.compactCount(12345), '12.3k');
-      expect(MovieFormatters.compactCount(2000000), '2M');
-      expect(MovieFormatters.date('2024-03-01'), '1 Mar 2024');
-      expect(MovieFormatters.date('soon'), 'soon');
-    });
+  test('exposes a readable error', () async {
+    final repo = repoWith(3)..failWith = const MovieException('Offline');
+    final c = MovieCatalogController(
+      category: MovieCategory.upcoming,
+      repository: repo,
+    );
+    await c.loadInitial();
+    expect(c.error, 'Could not load upcoming movies.');
+    expect(c.isLoading, isFalse);
+    c.dispose();
+  });
+
+  test('keeps loaded movies when a later page fails', () async {
+    final repo = repoWith(30);
+    final c = MovieCatalogController(
+      category: MovieCategory.popular,
+      repository: repo,
+    );
+    await c.loadInitial();
+    repo.failWith = const MovieException('Offline');
+    await c.loadMore();
+    expect(c.movies, hasLength(20));
+    expect(c.loadMoreError, isNotNull);
+    c.dispose();
   });
 }

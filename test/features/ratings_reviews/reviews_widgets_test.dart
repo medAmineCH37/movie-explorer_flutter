@@ -294,7 +294,7 @@ void main() {
       MaterialApp(
         home: MyRatingsPage(
           repository: repo,
-          movieLookup: (id) async => id == 1 ? movie : null,
+          movieLookup: (ids) async => {if (ids.contains(1)) 1: movie},
         ),
       ),
     );

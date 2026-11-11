@@ -12,7 +12,6 @@
 //
 // Secrets (supabase secrets set ...):
 //   GEMINI_API_KEY   required
-//   TMDB_API_KEY     required for summaries (server-side movie title)
 //   GEMINI_MODELS    optional, comma-separated fallback chain
 // SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are
 // provided by the Edge runtime.
@@ -207,16 +206,17 @@ async function draft(req: Request, body: Record<string, unknown>) {
 // Summary
 // ---------------------------------------------------------------------------
 
-async function movieTitle(movieId: number): Promise<string> {
-  const response = await fetch(
-    `https://api.themoviedb.org/3/movie/${movieId}?api_key=${
-      encodeURIComponent(env("TMDB_API_KEY"))
-    }&language=en-US`,
-    { signal: AbortSignal.timeout(10_000) },
-  );
-  if (response.status === 404) throw new HttpError(404, "Movie not found.");
-  if (!response.ok) throw new HttpError(503, UNAVAILABLE);
-  const movie = await response.json();
+async function movieTitle(
+  admin: SupabaseClient,
+  movieId: number,
+): Promise<string> {
+  const { data: movie, error } = await admin
+    .from("movies")
+    .select("title, release_date")
+    .eq("id", movieId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!movie) throw new HttpError(404, "Movie not found.");
   const year = String(movie.release_date ?? "").slice(0, 4);
   return year ? `${movie.title} (${year})` : String(movie.title);
 }
@@ -294,7 +294,7 @@ async function summary(body: Record<string, unknown>) {
     )
     .join("\n");
 
-  const title = await movieTitle(movieId);
+  const title = await movieTitle(admin, movieId);
   const prompt = [
     `Viewer reviews of the movie ${title}` +
     (average === null

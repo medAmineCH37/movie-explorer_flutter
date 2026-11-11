@@ -147,9 +147,11 @@ void main() {
         ..reviews.add(review(2, movieId: 30, userId: me, likes: 1));
       c = MyRatingsController(
         repository: repo,
-        lookup: (id) async => id == 30
-            ? null // removed from TMDB
-            : Movie(
+        // Movie 30 was deleted from the catalogue.
+        lookup: (ids) async => {
+          for (final id in ids)
+            if (id != 30)
+              id: Movie(
                 id: id,
                 title: 'Movie $id',
                 overview: '',
@@ -158,6 +160,7 @@ void main() {
                 voteAverage: 0,
                 releaseDate: '2020-01-01',
               ),
+        },
       );
     });
 
