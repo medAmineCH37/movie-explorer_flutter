@@ -115,8 +115,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       if (authState.user != null && authPage) return '/';
       if (location.startsWith('/module/user-management') &&
-          authState.user?.role.toLowerCase() != 'admin')
+          authState.user?.role.toLowerCase() != 'admin') {
         return '/';
+      }
       return null;
     },
   );

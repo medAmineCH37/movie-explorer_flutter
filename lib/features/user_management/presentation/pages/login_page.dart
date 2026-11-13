@@ -34,7 +34,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final colors = Theme.of(context).colorScheme;
     final bgIvory = Theme.of(context).scaffoldBackgroundColor;
     final surfaceWhite = colors.surface;
-    final borderSubtle = colors.outlineVariant;
     final textPrimary = colors.onSurface;
     final textMuted = colors.onSurfaceVariant;
     final accentGold = colors.primary;

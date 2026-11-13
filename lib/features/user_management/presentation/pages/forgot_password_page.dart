@@ -71,9 +71,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     final colors = Theme.of(context).colorScheme;
     final bgIvory = Theme.of(context).scaffoldBackgroundColor;
     final surfaceWhite = colors.surface;
-    final borderSubtle = colors.outlineVariant;
     final textPrimary = colors.onSurface;
-    final textMuted = colors.onSurfaceVariant;
     final accentGold = colors.primary;
     return Scaffold(
       backgroundColor: bgIvory,

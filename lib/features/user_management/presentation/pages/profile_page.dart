@@ -7,13 +7,6 @@ import '../providers/auth_provider.dart';
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
-  Color get bgIvory => Theme.of(context).scaffoldBackgroundColor;
-  Color get surfaceWhite => Theme.of(context).colorScheme.surface;
-  Color get borderSubtle => Theme.of(context).colorScheme.outlineVariant;
-  Color get textPrimary => Theme.of(context).colorScheme.onSurface;
-  Color get textMuted => Theme.of(context).colorScheme.onSurfaceVariant;
-  Color get accentGold => Theme.of(context).colorScheme.primary;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
@@ -22,7 +15,6 @@ class ProfilePage extends ConsumerWidget {
     final borderSubtle = colors.outlineVariant;
     final textPrimary = colors.onSurface;
     final textMuted = colors.onSurfaceVariant;
-    final accentGold = colors.primary;
     final state = ref.watch(authProvider);
     final user = state.user;
 

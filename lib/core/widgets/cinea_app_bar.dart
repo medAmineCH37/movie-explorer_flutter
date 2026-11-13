@@ -122,10 +122,7 @@ class _CineaAppBarState extends ConsumerState<CineaAppBar> {
                   ),
                   subtitle: Text(
                     user.email,
-                    style: TextStyle(
-                      color: user.isSubscribed ? accentGold : textMuted,
-                      fontSize: 11,
-                    ),
+                    style: TextStyle(color: textMuted, fontSize: 11),
                   ),
                   onTap: () {
                     Navigator.pop(ctx);

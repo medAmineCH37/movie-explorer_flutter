@@ -63,8 +63,6 @@ class _UserDetailPageState extends State<UserDetailPage> {
     final surfaceWhite = colors.surface;
     final borderSubtle = colors.outlineVariant;
     final textPrimary = colors.onSurface;
-    final textMuted = colors.onSurfaceVariant;
-    final accentGold = colors.primary;
     return Scaffold(
       backgroundColor: bgIvory,
       appBar: AppBar(
