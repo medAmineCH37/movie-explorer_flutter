@@ -234,35 +234,43 @@ create trigger review_reports_before_insert
 -- Authorisation
 -- ---------------------------------------------------------------------------
 
--- True when the caller is an administrator. main has no role column yet;
--- once profiles.role exists (User Management), admins are recognised
--- without another migration.
-create or replace function public.is_admin()
-returns boolean
-language plpgsql
-stable
-security definer
-set search_path = ''
-as $$
-declare
-  result boolean := false;
+-- True when the caller is an administrator. The real definition belongs to
+-- User Management (20261113_user_management_profiles.sql, profiles.role).
+-- This fallback is created only when no is_admin() exists yet, so this file
+-- never replaces it; until then it reads profiles.role if that column exists.
+do $do$
 begin
-  if auth.uid() is null then
-    return false;
+  if to_regprocedure('public.is_admin()') is null then
+    create function public.is_admin()
+    returns boolean
+    language plpgsql
+    stable
+    security definer
+    set search_path = ''
+    as $fn$
+    declare
+      result boolean := false;
+    begin
+      if auth.uid() is null then
+        return false;
+      end if;
+      if exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'profiles'
+          and column_name = 'role'
+      ) then
+        execute 'select role = ''admin'' from public.profiles where id = $1'
+          into result
+          using auth.uid();
+      end if;
+      return coalesce(result, false);
+    end;
+    $fn$;
+    grant execute on function public.is_admin() to authenticated;
   end if;
-  if exists (
-    select 1 from information_schema.columns
-    where table_schema = 'public'
-      and table_name = 'profiles'
-      and column_name = 'role'
-  ) then
-    execute 'select role = ''admin'' from public.profiles where id = $1'
-      into result
-      using auth.uid();
-  end if;
-  return coalesce(result, false);
 end;
-$$;
+$do$;
 
 alter table public.ratings enable row level security;
 alter table public.reviews enable row level security;
@@ -487,4 +495,3 @@ $$;
 
 grant execute on function public.get_movie_rating_summary(integer) to anon, authenticated;
 grant execute on function public.get_reviews(integer, uuid, text, integer, integer) to anon, authenticated;
-grant execute on function public.is_admin() to anon, authenticated;

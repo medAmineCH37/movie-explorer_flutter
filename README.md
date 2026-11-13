@@ -127,7 +127,7 @@ The project must use a compatible schema before features that store user data ca
 
 Then run the migrations in `supabase/migrations/` in date order. `20261111_ratings_reviews.sql` creates the Ratings & Reviews tables (`ratings`, `review_likes`, `review_reports`), their policies and read functions, and migrates the old `reviews` table: each 1–10 rating becomes a 1–5 rating, rounded up. It can safely be run more than once.
 
-Then run `20261112_movies_catalogue.sql` and load the sample catalogue with `supabase/seed/movies_seed.sql` (100 movies, their genres, directors and cast). Both are safe to run again. To refresh the sample data from TMDB:
+`20261112_movies_catalogue.sql` creates the movie catalogue tables. After all migrations, load the sample catalogue with `supabase/seed/movies_seed.sql` (100 movies, their genres, directors and cast). Both are safe to run again. To refresh the sample data from TMDB:
 
 ```bash
 dart run tool/generate_movie_seed.dart
