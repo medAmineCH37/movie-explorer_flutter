@@ -164,7 +164,7 @@ void main() {
   });
 
   group('ReviewComposer', () {
-    testWidgets('publishes only valid text and fills AI drafts', (
+    testWidgets('publishes only valid text and creates the review', (
       tester,
     ) async {
       final repo = FakeReviewsRepository();
@@ -193,21 +193,22 @@ void main() {
       expect(publish().onPressed, isNull);
       expect(find.textContaining('2 / 1000'), findsOneWidget);
 
-      await tester.tap(find.text('Help me write it'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).last, 'great visuals');
-      await tester.tap(find.text('Draft my review'));
-      await tester.pumpAndSettle();
-      // Existing text: confirm replacement.
-      await tester.tap(find.text('Replace'));
+      expect(find.text('Help me write it'), findsNothing);
+
+      await tester.enterText(
+        find.byType(TextField).first,
+        '  Great visuals, slow ending.  ',
+      );
+      await tester.tap(find.text('Contains spoilers'));
+      await tester.pump();
+      expect(publish().onPressed, isNotNull);
+
+      await tester.tap(find.text('Publish review'));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('Draft about Inception: great visuals.'),
-        findsOneWidget,
-      );
-      expect(publish().onPressed, isNotNull);
-      expect(repo.calls, contains('draft'));
+      expect(repo.calls, contains('create'));
+      expect(repo.reviews.single.content, 'Great visuals, slow ending.');
+      expect(repo.reviews.single.spoiler, isTrue);
     });
   });
 
@@ -236,11 +237,9 @@ void main() {
       expect(find.text('Sign in to review'), findsOneWidget);
       expect(find.text('Most liked'), findsOneWidget);
       expect(find.text('See the review'), findsOneWidget);
-      // One review: no AI summary yet.
-      expect(find.text('Summarize reviews with AI'), findsNothing);
     });
 
-    testWidgets('pins my review and offers the AI summary', (tester) async {
+    testWidgets('pins my review above the latest ones', (tester) async {
       final repo = FakeReviewsRepository()
         ..ratings[(me, 1)] = 5
         ..reviews.addAll([review(1, userId: me), review(2, userId: 'x')]);
@@ -261,11 +260,7 @@ void main() {
       expect(find.text('Write a review'), findsNothing);
       expect(find.textContaining('You reviewed this movie'), findsOneWidget);
       expect(find.text('Latest reviews'), findsOneWidget);
-
-      await tester.tap(find.text('Summarize reviews with AI'));
-      await tester.pumpAndSettle();
-      expect(find.text('Viewers loved it.'), findsOneWidget);
-      expect(find.textContaining('AI-generated'), findsOneWidget);
+      expect(find.text('Summarize reviews with AI'), findsNothing);
     });
 
     testWidgets('empty state invites the first review', (tester) async {

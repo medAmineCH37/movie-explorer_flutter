@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../domain/models/ai_review_summary.dart';
 import '../../domain/models/rating_summary.dart';
 import '../../domain/models/review.dart';
 import '../../domain/models/review_activity.dart';
@@ -212,39 +211,6 @@ class ReviewsRepositoryImpl implements ReviewsRepository {
     );
   });
 
-  @override
-  Future<String> draftReview({
-    required int movieId,
-    required String movieTitle,
-    String? movieYear,
-    required String keywords,
-  }) => _guard(() async {
-    _requireSignIn();
-    final error = ReviewRules.validateAiKeywords(keywords);
-    if (error != null) throw ReviewException(error);
-    final data = await _service.invokeAi({
-      'action': 'draft',
-      'movieId': movieId,
-      'movieTitle': movieTitle,
-      'movieYear': movieYear,
-      'keywords': keywords.trim(),
-    });
-    final draft = (data['draft'] as String? ?? '').trim();
-    if (draft.isEmpty) {
-      throw const ReviewException('The assistant returned an empty draft.');
-    }
-    return draft;
-  });
-
-  @override
-  Future<AiReviewSummary> getAiSummary(int movieId) => _guard(() async {
-    final data = await _service.invokeAi({
-      'action': 'summary',
-      'movieId': movieId,
-    });
-    return AiReviewSummary.fromJson(data);
-  });
-
   // -------------------------------------------------------------------------
 
   List<Review> _toReviews(List<Map<String, dynamic>> rows) => rows
@@ -270,8 +236,6 @@ class ReviewsRepositoryImpl implements ReviewsRepository {
       rethrow;
     } on PostgrestException catch (e) {
       throw ReviewException(_postgrestMessage(e));
-    } on FunctionException catch (e) {
-      throw ReviewException(_functionMessage(e));
     } on AuthException {
       throw const ReviewException(_signInMessage, requiresSignIn: true);
     } on SocketException {
@@ -304,14 +268,5 @@ class ReviewsRepositoryImpl implements ReviewsRepository {
       return 'You cannot report your own review.';
     }
     return 'Something went wrong. Please try again.';
-  }
-
-  static String _functionMessage(FunctionException e) {
-    final details = e.details;
-    if (details is Map && details['error'] is String) {
-      return details['error'] as String;
-    }
-    if (e.status == 401) return _signInMessage;
-    return 'The AI assistant is unavailable right now. Try again in a moment.';
   }
 }

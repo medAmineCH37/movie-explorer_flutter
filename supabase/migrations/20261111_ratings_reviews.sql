@@ -6,8 +6,6 @@
 -- * review_likes     one like per user and review, never on one's own review
 -- * review_reports   one report per user and review, 3–300 characters,
 --                    never on one's own review
--- * review_summaries AI summary cache, written only by the review-ai
---                    Edge Function (service role)
 --
 -- Movies are identified by their TMDB id (tmdb_movie_id), like favorites,
 -- watchlist and watched_movies.
@@ -114,17 +112,6 @@ create table if not exists public.review_reports (
   reason text not null check (char_length(reason) between 3 and 300),
   created_at timestamptz not null default now(),
   unique (review_id, reporter_user_id)
-);
-
--- ---------------------------------------------------------------------------
--- AI summary cache
--- ---------------------------------------------------------------------------
-
-create table if not exists public.review_summaries (
-  tmdb_movie_id integer primary key check (tmdb_movie_id > 0),
-  review_count integer not null,
-  summary jsonb not null,
-  generated_at timestamptz not null default now()
 );
 
 -- ---------------------------------------------------------------------------
@@ -281,7 +268,6 @@ alter table public.ratings enable row level security;
 alter table public.reviews enable row level security;
 alter table public.review_likes enable row level security;
 alter table public.review_reports enable row level security;
-alter table public.review_summaries enable row level security;
 
 drop policy if exists "Users manage their own reviews" on public.reviews;
 
@@ -369,13 +355,6 @@ create policy "Users report reviews"
 on public.review_reports for insert
 to authenticated
 with check ((select auth.uid()) = reporter_user_id);
-
--- Summary cache: public read; only the service role writes.
-drop policy if exists "Review summaries are public" on public.review_summaries;
-create policy "Review summaries are public"
-on public.review_summaries for select
-to anon, authenticated
-using (true);
 
 -- ---------------------------------------------------------------------------
 -- Read API

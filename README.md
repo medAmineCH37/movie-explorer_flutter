@@ -38,7 +38,6 @@ The application is being developed collaboratively in separate feature modules. 
   - One review per user and movie, with a spoiler flag, likes, reports and an edited indicator.
   - Full review list with four sorts and 10 reviews per page.
   - My ratings & reviews screen with personal statistics.
-  - AI review drafting and AI review summaries (Gemini, through a Supabase Edge Function).
 
 ### Planned / In Development
 
@@ -126,24 +125,13 @@ Each team member must configure their own local `env.json` before running the ap
 
 The project must use a compatible schema before features that store user data can work.
 
-Then run the migrations in `supabase/migrations/` in date order. `20261111_ratings_reviews.sql` creates the Ratings & Reviews tables (`ratings`, `review_likes`, `review_reports`, `review_summaries`), their policies and read functions, and migrates the old `reviews` table: each 1–10 rating becomes a 1–5 rating, rounded up. It can safely be run more than once.
+Then run the migrations in `supabase/migrations/` in date order. `20261111_ratings_reviews.sql` creates the Ratings & Reviews tables (`ratings`, `review_likes`, `review_reports`), their policies and read functions, and migrates the old `reviews` table: each 1–10 rating becomes a 1–5 rating, rounded up. It can safely be run more than once.
 
 Then run `20261112_movies_catalogue.sql` and load the sample catalogue with `supabase/seed/movies_seed.sql` (100 movies, their genres, directors and cast). Both are safe to run again. To refresh the sample data from TMDB:
 
 ```bash
 dart run tool/generate_movie_seed.dart
 ```
-
-### 4b. Deploy the AI review assistant (optional)
-
-AI review drafts and AI review summaries run in the `review-ai` Supabase Edge Function. The Gemini key stays on the server and never ships in the app.
-
-```bash
-supabase secrets set GEMINI_API_KEY=your-gemini-key
-supabase functions deploy review-ai --no-verify-jwt
-```
-
-`--no-verify-jwt` is required because the app's publishable key is not a JWT. The function checks the user itself for drafts, and summaries are public. `GEMINI_MODELS` (comma-separated) optionally overrides the model fallback chain. Without the function, everything else in Ratings & Reviews still works, and the AI buttons show an "unavailable" message.
 
 ### 5. Run the application
 

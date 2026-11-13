@@ -1,4 +1,3 @@
-import 'package:movie_explorer/features/ratings_reviews/domain/models/ai_review_summary.dart';
 import 'package:movie_explorer/features/ratings_reviews/domain/models/rating_summary.dart';
 import 'package:movie_explorer/features/ratings_reviews/domain/models/review.dart';
 import 'package:movie_explorer/features/ratings_reviews/domain/models/review_activity.dart';
@@ -257,29 +256,6 @@ class FakeReviewsRepository implements ReviewsRepository {
             e.key.$2: (e.value, DateTime(2026, 2, e.key.$2)),
       },
       reviews: reviews.where((r) => r.userId == user).map(_view).toList(),
-    );
-  }
-
-  @override
-  Future<String> draftReview({
-    required int movieId,
-    required String movieTitle,
-    String? movieYear,
-    required String keywords,
-  }) async {
-    _check('draft');
-    return 'Draft about $movieTitle: $keywords.';
-  }
-
-  @override
-  Future<AiReviewSummary> getAiSummary(int movieId) async {
-    _check('aiSummary');
-    return AiReviewSummary(
-      summary: 'Viewers loved it.',
-      strengths: const ['Acting'],
-      weaknesses: const ['Length'],
-      reviewCount: reviews.where((r) => r.movieId == movieId).length,
-      generatedAt: DateTime(2026),
     );
   }
 }
