@@ -1,9 +1,8 @@
-import '../../../../core/navigation/app_shell.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/navigation/app_shell.dart';
 import '../providers/auth_provider.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -42,7 +41,6 @@ class ProfilePage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: bgIvory,
       appBar: AppBar(
-        leading: shellMenuButton(context),
         backgroundColor: surfaceWhite,
         elevation: 0,
         centerTitle: false,
@@ -55,14 +53,16 @@ class ProfilePage extends ConsumerWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: textPrimary,
-            size: 18,
-          ),
-          onPressed: () => context.go('/'),
-        ),
+        leading:
+            shellMenuButton(context) ??
+            IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: textPrimary,
+                size: 18,
+              ),
+              onPressed: () => context.go('/'),
+            ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
