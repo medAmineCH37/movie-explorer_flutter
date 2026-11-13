@@ -20,8 +20,11 @@ import '../../features/user_management/presentation/pages/user_management_page.d
 import '../../features/user_management/presentation/providers/auth_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-  return GoRouter(
+  final authRefresh = _AuthRouterRefreshListenable();
+  ref.listen(authProvider, (_, _) => authRefresh.refresh());
+
+  final router = GoRouter(
+    refreshListenable: authRefresh,
     initialLocation: '/',
     routes: [
       GoRoute(path: '/', builder: (context, state) => const HomePage()),
@@ -93,7 +96,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
       final location = state.matchedLocation;
+      if (authState.isPasswordRecovery) {
+        return location == '/reset-password' ? null : '/reset-password';
+      }
       final authPage = {
         '/login',
         '/register',
@@ -113,7 +120,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           queryParameters: {'redirect': state.uri.toString()},
         ).toString();
       }
-      if (authState.user != null && authPage) return '/';
+      // Supabase authenticates the user when they open a recovery link. Keep
+      // the reset form reachable for that authenticated recovery session.
+      if (authState.user != null &&
+          authPage &&
+          location != '/reset-password') {
+        return '/';
+      }
       if (location.startsWith('/module/user-management') &&
           authState.user?.role.toLowerCase() != 'admin') {
         return '/';
@@ -121,4 +134,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
   );
+
+  ref.onDispose(() {
+    router.dispose();
+    authRefresh.dispose();
+  });
+
+  return router;
 });
+
+class _AuthRouterRefreshListenable extends ChangeNotifier {
+  void refresh() => notifyListeners();
+}

@@ -7,19 +7,27 @@ import '../../data/services/auth_service.dart';
 class AuthState {
   final UserModel? user;
   final bool isLoading;
+  final bool isPasswordRecovery;
   final String? error;
 
-  AuthState({this.user, this.isLoading = false, this.error});
+  AuthState({
+    this.user,
+    this.isLoading = false,
+    this.isPasswordRecovery = false,
+    this.error,
+  });
 
   AuthState copyWith({
     UserModel? user,
     bool? isLoading,
+    bool? isPasswordRecovery,
     String? error,
     bool clearUser = false,
   }) {
     return AuthState(
       user: clearUser ? null : (user ?? this.user),
       isLoading: isLoading ?? this.isLoading,
+      isPasswordRecovery: isPasswordRecovery ?? this.isPasswordRecovery,
       error: error ?? this.error,
     );
   }
@@ -33,9 +41,18 @@ class AuthNotifier extends Notifier<AuthState> {
     final subscription = _service.authStateChanges.listen((event) {
       if (event.event == AuthChangeEvent.signedOut) {
         state = AuthState(user: null);
+      } else if (event.event == AuthChangeEvent.passwordRecovery) {
+        // Supabase emits this after opening a recovery link. Keep a dedicated
+        // flag so routing can show the password form even if the URI resolves
+        // to the app's root location.
+        state = state.copyWith(isPasswordRecovery: true, isLoading: false);
+      } else if (event.event == AuthChangeEvent.userUpdated) {
+        // updateUser emits userUpdated after the new password is accepted.
+        state = state.copyWith(isPasswordRecovery: false);
+        Future.microtask(_loadSession);
       } else if (event.event == AuthChangeEvent.signedIn ||
           event.event == AuthChangeEvent.tokenRefreshed ||
-          event.event == AuthChangeEvent.userUpdated) {
+          event.event == AuthChangeEvent.initialSession) {
         Future.microtask(_loadSession);
       }
     });
@@ -48,7 +65,11 @@ class AuthNotifier extends Notifier<AuthState> {
     try {
       final curr = _service.currentUser;
       if (curr == null || curr.email == null) {
-        state = AuthState(user: null, isLoading: false);
+        state = AuthState(
+          user: null,
+          isLoading: false,
+          isPasswordRecovery: state.isPasswordRecovery,
+        );
         return;
       }
 
@@ -56,9 +77,17 @@ class AuthNotifier extends Notifier<AuthState> {
           .getProfile(curr.id, curr.email!)
           .timeout(const Duration(seconds: 4));
 
-      state = AuthState(user: profile, isLoading: false);
+      state = AuthState(
+        user: profile,
+        isLoading: false,
+        isPasswordRecovery: state.isPasswordRecovery,
+      );
     } catch (_) {
-      state = AuthState(user: null, isLoading: false);
+      state = AuthState(
+        user: null,
+        isLoading: false,
+        isPasswordRecovery: state.isPasswordRecovery,
+      );
     }
   }
 
