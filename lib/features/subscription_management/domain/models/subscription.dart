@@ -81,6 +81,7 @@ class Subscription {
     required this.endsAt,
     this.amountPaid = 0,
     this.refundAmount = 0,
+    this.creditApplied = 0,
     this.cardBrand,
     this.cardLast4,
     this.userId,
@@ -99,6 +100,7 @@ class Subscription {
       endsAt: DateTime.parse(map['ends_at'] as String).toLocal(),
       amountPaid: (map['amount_paid'] as num?)?.toDouble() ?? 0,
       refundAmount: (map['refund_amount'] as num?)?.toDouble() ?? 0,
+      creditApplied: (map['credit_applied'] as num?)?.toDouble() ?? 0,
       cardBrand: map['card_brand'] as String?,
       cardLast4: map['card_last4'] as String?,
       userId: map['user_id'] as String?,
@@ -115,6 +117,7 @@ class Subscription {
   final DateTime endsAt;
   final double amountPaid;
   final double refundAmount;
+  final double creditApplied;
   final String? cardBrand;
   final String? cardLast4;
   final String? userId;
@@ -144,7 +147,9 @@ class Subscription {
 
   double get unusedValue {
     final value = plan.price * unusedDays / plan.durationDays;
-    return roundMoney(max(0, min(value, amountPaid - refundAmount)));
+    return roundMoney(
+      max(0, min(value, amountPaid + creditApplied - refundAmount)),
+    );
   }
 
   double get netPaid => roundMoney(amountPaid - refundAmount);
