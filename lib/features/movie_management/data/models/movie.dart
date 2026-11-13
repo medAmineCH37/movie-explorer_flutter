@@ -9,6 +9,8 @@ class Movie {
     required this.releaseDate,
     this.genres = const [],
     this.runtime,
+    this.voteCount = 0,
+    this.originalLanguage,
   });
 
   final int id;
@@ -20,6 +22,8 @@ class Movie {
   final String releaseDate;
   final List<String> genres;
   final int? runtime;
+  final int voteCount;
+  final String? originalLanguage;
 
   factory Movie.fromJson(Map<String, dynamic> json) {
     return Movie(
@@ -42,7 +46,15 @@ class Movie {
               .toList() ??
           const [],
       runtime: (json['runtime'] as num?)?.toInt(),
+      voteCount: (json['vote_count'] as num?)?.toInt() ?? 0,
+      originalLanguage: json['original_language'] as String?,
     );
+  }
+
+  /// Four-digit release year, or `null` when TMDB has no release date.
+  String? get releaseYear {
+    if (releaseDate.length < 4) return null;
+    return releaseDate.substring(0, 4);
   }
 
   String? get posterUrl {

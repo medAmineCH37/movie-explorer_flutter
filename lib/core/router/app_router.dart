@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../app/home_page.dart';
 import '../../app/module_placeholder_page.dart';
+import '../../features/movie_management/data/models/movie_category.dart';
+import '../../features/movie_management/presentation/pages/movie_catalog_page.dart';
 import '../../features/movie_management/presentation/pages/movie_details_page.dart';
 import '../../features/movie_discovery/presentation/pages/movie_search_page.dart';
 import '../../features/user_management/presentation/pages/login_page.dart';
@@ -21,6 +23,14 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/collection',
       builder: (context, state) => const CollectionPage(),
+    ),
+    GoRoute(
+      path: '/movies',
+      builder: (context, state) => MovieCatalogPage(
+        initialCategory: MovieCategory.fromSlug(
+          state.uri.queryParameters['category'],
+        ),
+      ),
     ),
     GoRoute(
       path: '/movie/:movieId',
@@ -46,5 +56,33 @@ final appRouter = GoRouter(
       path: '/search',
       builder: (context, state) => const MovieSearchPage(),
     ),
+    GoRoute(
+  path: '/movies-manage',
+  builder: (context, state) => const MovieManagementPage(),
+  routes: [
+    GoRoute(
+      path: 'new',
+      builder: (context, state) => const CustomMovieFormPage(),
+    ),
+    GoRoute(
+      path: ':id',
+      builder: (context, state) {
+        final id = int.tryParse(state.pathParameters['id'] ?? '');
+        if (id == null) {
+          return const Scaffold(body: Center(child: Text('Invalid movie ID')));
+        }
+        return CustomMovieDetailsPage(movieId: id);
+      },
+      routes: [
+        GoRoute(
+          path: 'edit',
+          builder: (context, state) => CustomMovieFormPage(
+            movieId: int.tryParse(state.pathParameters['id'] ?? ''),
+          ),
+        ),
+      ],
+    ),
+  ],
+),
   ],
 );
