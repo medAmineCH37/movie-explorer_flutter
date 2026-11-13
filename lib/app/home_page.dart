@@ -95,6 +95,7 @@ class _HomePageState extends State<HomePage> {
     return switch (moduleId) {
       'personal-collection' => '/collection',
       'subscription-management' => '/subscription',
+      'recommendations-custom-lists' => '/for-you',
       'movie-management' => '/movies',
       _ => '/module/$moduleId',
     };

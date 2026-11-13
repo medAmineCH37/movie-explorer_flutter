@@ -24,11 +24,17 @@ The application is being developed collaboratively in separate feature modules. 
   - Add or remove movies directly from the Movie Details page.
   - Refresh collection data when navigating back from movie details.
 
+- **Recommendations & Custom Lists** (Module 6)
+  - "For You" page: hero carousel, personal picks with % match, Top 10, genre rows.
+  - Custom lists: 2–50 character name unique per user (case-insensitive), 20 lists and 100 movies max, no duplicates, private or public, owner-only edits.
+  - Community lists (public lists, read-only) and recommendations per list.
+  - Score = 2 × seed movies recommending it + 1 × shared favorite genres + TMDB rating / 10, shown as 55–99 % match. Falls back to trending without signals.
+  - Requires `supabase/migrations/20261107_recommendations_custom_lists.sql`.
+
 ### Planned / In Development
 
 - Ratings and Reviews Management.
 - Movie Discovery Management.
-- Recommendations and Custom Lists Management.
 
 ## Technology Stack
 
