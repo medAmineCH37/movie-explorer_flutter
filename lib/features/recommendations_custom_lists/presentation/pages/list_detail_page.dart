@@ -10,6 +10,7 @@ import '../widgets/list_form_sheet.dart';
 import '../widgets/movie_rail.dart';
 import '../widgets/poster_quick_actions.dart';
 import '../widgets/reco_ui.dart';
+import '../../../../core/navigation/app_shell.dart';
 
 class ListDetailPage extends StatefulWidget {
   const ListDetailPage({required this.listId, super.key});
@@ -168,7 +169,10 @@ class _ListDetailPageState extends State<ListDetailPage> {
         }
         if (c.error != null || c.notFound || list == null) {
           return Scaffold(
-            appBar: AppBar(),
+            appBar: AppBar(
+              leading: const ShellLeading(),
+              leadingWidth: shellLeadingWidth(context),
+            ),
             body: c.notFound
                 ? const Center(
                     child: Text('This list does not exist or is private.'),
@@ -193,6 +197,8 @@ class _ListDetailPageState extends State<ListDetailPage> {
             child: CustomScrollView(
               slivers: [
                 SliverAppBar(
+                  leading: const ShellLeading(),
+                  leadingWidth: shellLeadingWidth(context),
                   pinned: true,
                   expandedHeight: 320,
                   actions: [

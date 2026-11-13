@@ -4,7 +4,7 @@ import '../../../../core/favorites/favorite_ids_store.dart';
 import 'add_to_list_sheet.dart';
 
 /// Overlay for any poster: a heart when the movie is a favorite (top right)
-/// and a "+" button to add it to a list (bottom right).
+/// and, on the For You page only, a "+" button to add it to a list.
 /// Place it as the last child of the poster's [Stack].
 class PosterQuickActions extends StatelessWidget {
   const PosterQuickActions({
@@ -12,6 +12,7 @@ class PosterQuickActions extends StatelessWidget {
     super.key,
     this.compact = false,
     this.heartOnLeft = false,
+    this.showAddButton = false,
   });
 
   final int movieId;
@@ -21,6 +22,9 @@ class PosterQuickActions extends StatelessWidget {
 
   /// Puts the heart top left when the top right corner is already used.
   final bool heartOnLeft;
+
+  /// Shows the "+" add-to-list button (For You page).
+  final bool showAddButton;
 
   @override
   Widget build(BuildContext context) {
@@ -37,14 +41,15 @@ class PosterQuickActions extends StatelessWidget {
                 left: heartOnLeft ? 6 : null,
                 child: FavoriteHeartBadge(size: compact ? 14 : 18),
               ),
-            Positioned(
-              right: 6,
-              bottom: 6,
-              child: AddToListCircleButton(
-                movieId: movieId,
-                size: compact ? 26 : 32,
+            if (showAddButton)
+              Positioned(
+                right: 6,
+                bottom: 6,
+                child: AddToListCircleButton(
+                  movieId: movieId,
+                  size: compact ? 26 : 32,
+                ),
               ),
-            ),
           ],
         ),
       ),

@@ -8,6 +8,7 @@ import '../controllers/admin_subscription_controller.dart';
 import '../widgets/admin_stats.dart';
 import '../widgets/admin_subscription_tile.dart';
 import '../widgets/grant_subscription_dialog.dart';
+import '../../../../core/navigation/app_shell.dart';
 
 class AdminSubscriptionsPage extends StatefulWidget {
   const AdminSubscriptionsPage({super.key, this.repository});
@@ -144,11 +145,8 @@ class _AdminSubscriptionsPageState extends State<AdminSubscriptionsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manage subscriptions'),
-        leading: IconButton(
-          onPressed: () => context.go('/subscription'),
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Back',
-        ),
+        leading: ShellLeading(onBack: () => context.go('/subscription')),
+        leadingWidth: shellLeadingWidth(context, customBack: true),
       ),
       floatingActionButton: _isAdmin == true
           ? FloatingActionButton.extended(

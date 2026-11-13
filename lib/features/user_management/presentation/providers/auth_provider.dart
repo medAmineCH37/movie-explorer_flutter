@@ -125,7 +125,8 @@ class AuthNotifier extends Notifier<AuthState> {
           state = AuthState(
             user: null,
             isLoading: false,
-            error: 'Accès refusé : votre compte a été bloqué par un administrateur.',
+            error:
+                'Access denied: your account was blocked by an administrator.',
           );
           return false;
         }
@@ -136,15 +137,14 @@ class AuthNotifier extends Notifier<AuthState> {
     } on AuthException catch (e) {
       String errorMessage = e.message;
       if (e.message.contains('Invalid login credentials')) {
-        errorMessage = 'Adresse e-mail ou mot de passe incorrect.';
+        errorMessage = 'Incorrect e-mail address or password.';
       } else if (e.message.contains('Email not confirmed')) {
-        errorMessage =
-            'Veuillez confirmer votre adresse e-mail avant de vous connecter.';
+        errorMessage = 'Please confirm your e-mail address before signing in.';
       }
       state = AuthState(error: errorMessage, isLoading: false);
     } catch (e) {
       state = AuthState(
-        error: 'Impossible de se connecter. Vérifiez votre saisie ou votre réseau.',
+        error: 'Could not sign in. Check your details or your connection.',
         isLoading: false,
       );
     }

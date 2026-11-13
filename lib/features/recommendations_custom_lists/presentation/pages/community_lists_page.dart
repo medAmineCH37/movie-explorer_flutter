@@ -5,6 +5,7 @@ import '../../data/custom_list_repository.dart';
 import '../../domain/models/custom_list.dart';
 import '../widgets/reco_ui.dart';
 import 'my_lists_page.dart';
+import '../../../../core/navigation/app_shell.dart';
 
 /// Public lists of every user (read-only for non-owners).
 class CommunityListsPage extends StatefulWidget {
@@ -53,6 +54,8 @@ class _CommunityListsPageState extends State<CommunityListsPage> {
     final me = _repository.currentUserId;
     return Scaffold(
       appBar: AppBar(
+        leading: const ShellLeading(),
+        leadingWidth: shellLeadingWidth(context),
         title: const Text(
           'Community lists',
           style: TextStyle(fontWeight: FontWeight.w800),

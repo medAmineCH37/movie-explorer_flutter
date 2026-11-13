@@ -11,10 +11,6 @@ class AppDrawer extends ConsumerWidget {
 
   final String currentPath;
 
-  /// Main tabs are opened with `go` (they replace the current tab);
-  /// other pages are pushed so the back arrow returns here.
-  static const _tabPaths = {'/', '/discover', '/for-you', '/lists', '/profile'};
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
@@ -24,11 +20,7 @@ class AppDrawer extends ConsumerWidget {
 
     void open(String path) {
       Navigator.of(context).pop();
-      if (_tabPaths.contains(path)) {
-        context.go(path);
-      } else {
-        context.push(path);
-      }
+      context.go(path);
     }
 
     Widget item(IconData icon, String label, String path) {
@@ -104,10 +96,7 @@ class AppDrawer extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.all(8),
                 child: FilledButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    context.push('/login');
-                  },
+                  onPressed: () => open('/login'),
                   icon: const Icon(Icons.login_rounded),
                   label: const Text('Sign in'),
                 ),

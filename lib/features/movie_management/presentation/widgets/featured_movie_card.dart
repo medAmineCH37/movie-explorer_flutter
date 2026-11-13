@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -37,7 +38,18 @@ class FeaturedMovieCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  MoviePosterImage(url: movie.backdropUrl ?? movie.posterUrl),
+                  // Poster underneath: still shown if the backdrop is
+                  // missing or fails to load.
+                  MoviePosterImage(url: movie.posterUrl),
+                  if (movie.backdropUrl != null)
+                    CachedNetworkImage(
+                      imageUrl: movie.backdropUrl!,
+                      fit: BoxFit.cover,
+                      fadeInDuration: const Duration(milliseconds: 250),
+                      placeholder: (context, url) => const SizedBox.shrink(),
+                      errorWidget: (context, url, error) =>
+                          const SizedBox.shrink(),
+                    ),
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(

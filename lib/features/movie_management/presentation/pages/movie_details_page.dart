@@ -13,6 +13,7 @@ import '../movie_actions.dart';
 import '../movie_formatters.dart';
 import '../widgets/movie_card.dart';
 import '../widgets/movie_poster_image.dart';
+import '../../../../core/navigation/app_shell.dart';
 
 class MovieDetailsPage extends StatefulWidget {
   const MovieDetailsPage({super.key, required this.movieId, this.repository});
@@ -120,11 +121,8 @@ class _DetailsView extends StatelessWidget {
           expandedHeight: 280,
           pinned: true,
           backgroundColor: theme.scaffoldBackgroundColor,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            tooltip: 'Back',
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
+          leading: const ShellLeading(),
+          leadingWidth: shellLeadingWidth(context),
           actions: [
             IconButton(
               tooltip: 'Edit movie',

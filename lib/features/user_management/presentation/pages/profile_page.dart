@@ -26,11 +26,11 @@ class ProfilePage extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Aucune session active."),
+              const Text("No active session."),
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () => context.go('/login'),
-                child: const Text('Se connecter'),
+                child: const Text('Sign in'),
               ),
             ],
           ),
@@ -46,23 +46,15 @@ class ProfilePage extends ConsumerWidget {
         centerTitle: false,
         shape: Border(bottom: BorderSide(color: borderSubtle, width: 1)),
         title: Text(
-          'Mon profil',
+          'My profile',
           style: TextStyle(
             color: textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
         ),
-        leading:
-            shellMenuButton(context) ??
-            IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: textPrimary,
-                size: 18,
-              ),
-              onPressed: () => context.go('/'),
-            ),
+        leading: const ShellLeading(),
+        leadingWidth: shellLeadingWidth(context),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -70,7 +62,7 @@ class ProfilePage extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Bonjour, ${user.name}',
+              'Hello, ${user.name}',
               style: TextStyle(
                 color: textPrimary,
                 fontSize: 24,
@@ -78,7 +70,7 @@ class ProfilePage extends ConsumerWidget {
               ),
             ),
             Text(
-              'Rôle : ${user.role.toUpperCase()}',
+              'Role: ${user.role.toUpperCase()}',
               style: TextStyle(
                 color: textMuted,
                 fontSize: 13,
@@ -88,14 +80,14 @@ class ProfilePage extends ConsumerWidget {
             const SizedBox(height: 24),
             ListTile(
               leading: const Icon(Icons.star_outline),
-              title: const Text('Mes notes et avis'),
-              subtitle: const Text('Consulter mes contributions'),
+              title: const Text('My ratings & reviews'),
+              subtitle: const Text('See my contributions'),
               onTap: () => context.push('/my-ratings'),
             ),
             ListTile(
               leading: const Icon(Icons.logout, color: Color(0xFF96443C)),
               title: const Text(
-                'Se déconnecter de la session',
+                'Sign out',
                 style: TextStyle(
                   color: Color(0xFF96443C),
                   fontWeight: FontWeight.bold,

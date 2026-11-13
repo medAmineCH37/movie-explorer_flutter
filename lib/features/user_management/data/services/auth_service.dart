@@ -45,7 +45,7 @@ class AuthService implements AuthRepository {
           });
         } catch (e) {
           debugPrint(
-            '⚠️ Erreur upsert profil (colonne email à vérifier dans Supabase) : $e',
+            '⚠️ Profile upsert error (check the email column in Supabase): $e',
           );
         }
       }
@@ -54,7 +54,7 @@ class AuthService implements AuthRepository {
     } on AuthException catch (e) {
       throw Exception(e.message);
     } catch (e) {
-      throw Exception('Erreur lors de l\'inscription : $e');
+      throw Exception('Sign-up error: $e');
     }
   }
 
@@ -71,7 +71,7 @@ class AuthService implements AuthRepository {
     } on AuthException catch (e) {
       throw Exception(e.message);
     } catch (e) {
-      throw Exception('Erreur lors de la connexion : $e');
+      throw Exception('Sign-in error: $e');
     }
   }
 
@@ -85,7 +85,7 @@ class AuthService implements AuthRepository {
     } on AuthException catch (e) {
       throw Exception(e.message);
     } catch (e) {
-      throw Exception('Erreur réinitialisation : $e');
+      throw Exception('Password reset error: $e');
     }
   }
 
@@ -96,7 +96,7 @@ class AuthService implements AuthRepository {
     } on AuthException catch (e) {
       throw Exception(e.message);
     } catch (e) {
-      throw Exception('Erreur mise à jour mot de passe : $e');
+      throw Exception('Password update error: $e');
     }
   }
 
@@ -119,7 +119,7 @@ class AuthService implements AuthRepository {
           'id': userId,
           'email': email,
           'display_name':
-              currentUser?.userMetadata?['display_name'] ?? 'Cinéphile',
+              currentUser?.userMetadata?['display_name'] ?? 'Movie fan',
           'role': 'user',
           'valide': true,
           'created_at': DateTime.now().toIso8601String(),
@@ -146,7 +146,7 @@ class AuthService implements AuthRepository {
       return UserModel(
         id: userId,
         email: email,
-        name: currentUser?.userMetadata?['display_name'] ?? 'Cinéphile',
+        name: currentUser?.userMetadata?['display_name'] ?? 'Movie fan',
         role: 'user',
         valide: true,
       );
@@ -166,7 +166,7 @@ class AuthService implements AuthRepository {
       return data.map((json) {
         final userEmail = (json['email'] as String?)?.isNotEmpty == true
             ? json['email'] as String
-            : 'utilisateur@cinea.app';
+            : 'user@cinehub.app';
         return UserModel.fromJson(json, userEmail);
       }).toList();
     } catch (e) {
@@ -186,7 +186,7 @@ class AuthService implements AuthRepository {
       if (data == null) return null;
       final email = (data['email'] as String?)?.isNotEmpty == true
           ? data['email'] as String
-          : 'utilisateur@cinea.app';
+          : 'user@cinehub.app';
       return UserModel.fromJson(data, email);
     } catch (e) {
       return null;
@@ -247,6 +247,8 @@ class AuthService implements AuthRepository {
     if (response.status < 400) return;
     final data = response.data;
     final message = data is Map ? data['error']?.toString() : null;
-    throw Exception(message ?? 'Could not complete the user management action.');
+    throw Exception(
+      message ?? 'Could not complete the user management action.',
+    );
   }
 }

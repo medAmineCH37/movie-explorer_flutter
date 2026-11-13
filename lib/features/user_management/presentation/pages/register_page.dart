@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/auth_provider.dart';
+import '../../../../core/navigation/app_shell.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -44,14 +45,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: textPrimary,
-            size: 18,
-          ),
-          onPressed: () => context.go('/login'),
+        leading: ShellLeading(
+          onBack: () => context.go('/login'),
+          color: textPrimary,
         ),
+        leadingWidth: shellLeadingWidth(context, customBack: true),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -84,7 +82,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'REJOINDRE CINÉHUB',
+                          'JOIN CINÉHUB',
                           style: TextStyle(
                             color: accentGold,
                             fontSize: 22,
@@ -104,11 +102,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       fontWeight: FontWeight.w600,
                     ),
                     decoration: const InputDecoration(
-                      labelText: "Nom d'utilisateur",
+                      labelText: "Username",
                       prefixIcon: Icon(Icons.person_outline),
                     ),
                     validator: (v) => v == null || v.trim().isEmpty
-                        ? "Entrez votre nom."
+                        ? "Enter your name."
                         : null,
                   ),
                   const SizedBox(height: 16),
@@ -125,7 +123,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
                     validator: (v) => v == null || !v.contains('@')
-                        ? 'Entrez un email valide.'
+                        ? 'Enter a valid e-mail.'
                         : null,
                   ),
                   const SizedBox(height: 16),
@@ -138,11 +136,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       fontWeight: FontWeight.w600,
                     ),
                     decoration: const InputDecoration(
-                      labelText: 'Mot de passe',
+                      labelText: 'Password',
                       prefixIcon: Icon(Icons.lock_outline),
                     ),
                     validator: (v) => v == null || v.length < 6
-                        ? 'Minimum 6 caractères.'
+                        ? 'At least 6 characters.'
                         : null,
                   ),
                   const SizedBox(height: 24),
@@ -168,12 +166,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                   showDialog(
                                     context: context,
                                     builder: (dialogContext) => AlertDialog(
-                                      title: const Text(
-                                        'Compte créé avec succès !',
-                                      ),
+                                      title: const Text('Account created!'),
                                       content: const Text(
-                                        'Un e-mail de confirmation a été envoyé à votre adresse. '
-                                        'Veuillez le valider pour activer votre accès.',
+                                        'A confirmation e-mail has been sent to your address. '
+                                        'Please confirm it to activate your account.',
                                       ),
                                       actions: [
                                         TextButton(
@@ -181,9 +177,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                             Navigator.pop(dialogContext);
                                             router.go('/login');
                                           },
-                                          child: const Text(
-                                            'Aller à la connexion',
-                                          ),
+                                          child: const Text('Go to sign in'),
                                         ),
                                       ],
                                     ),
@@ -209,7 +203,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               ),
                             )
                           : const Text(
-                              'CRÉER MON COMPTE',
+                              'CREATE MY ACCOUNT',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w900,
@@ -222,7 +216,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   TextButton(
                     onPressed: () => context.go('/login'),
                     child: Text(
-                      "Déjà membre ? Se connecter",
+                      "Already a member? Sign in",
                       style: TextStyle(
                         color: accentGold,
                         fontSize: 13,

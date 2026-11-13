@@ -113,7 +113,9 @@ class _MovieDiscoveryPageState extends State<MovieDiscoveryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: shellMenuButton(context),
+        leading: const ShellLeading(),
+
+        leadingWidth: shellLeadingWidth(context),
         title: const Text(
           'Discover',
           style: TextStyle(fontWeight: FontWeight.bold),

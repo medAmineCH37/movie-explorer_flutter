@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/navigation/app_shell.dart';
 import '../providers/auth_provider.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -41,6 +42,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     return Scaffold(
       backgroundColor: bgIvory,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: const ShellLeading(),
+        leadingWidth: shellLeadingWidth(context),
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(28.0),
@@ -85,7 +92,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 40),
                   Text(
-                    'CONNEXION CITOYENNE',
+                    'SIGN IN',
                     style: TextStyle(
                       color: accentGold,
                       fontSize: 10,
@@ -95,7 +102,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'De retour sur votre\nécran Cinéphile',
+                    'Welcome back,\nmovie fan',
                     style: TextStyle(
                       color: textPrimary,
                       fontSize: 26,
@@ -114,11 +121,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       fontWeight: FontWeight.w600,
                     ),
                     decoration: const InputDecoration(
-                      labelText: 'ADRESSE E-MAIL',
+                      labelText: 'E-MAIL ADDRESS',
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
                     validator: (v) => v == null || !v.contains('@')
-                        ? 'Entrez un email valide.'
+                        ? 'Enter a valid e-mail.'
                         : null,
                   ),
                   const SizedBox(height: 18),
@@ -131,12 +138,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       fontWeight: FontWeight.w600,
                     ),
                     decoration: const InputDecoration(
-                      labelText: 'MOT DE PASSE SECRÈT',
+                      labelText: 'PASSWORD',
                       prefixIcon: Icon(Icons.lock_outline),
                     ),
-                    validator: (v) => v == null || v.isEmpty
-                        ? 'Entrez votre mot de passe.'
-                        : null,
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Enter your password.' : null,
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -185,7 +191,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               ),
                             )
                           : const Text(
-                              'SE CONNECTER À L\'ESPACE',
+                              'SIGN IN',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w900,
@@ -198,7 +204,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   TextButton(
                     onPressed: () => context.go('/register'),
                     child: Text(
-                      "Créer un compte Cinéphile",
+                      "Create an account",
                       style: TextStyle(
                         color: accentGold,
                         fontSize: 13,
@@ -209,7 +215,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   TextButton(
                     onPressed: () => context.go('/forgot-password'),
                     child: Text(
-                      "Mot de passe oublié ? Rétablir l'accès",
+                      "Forgot your password? Reset it",
                       style: TextStyle(
                         fontSize: 12,
                         color: textMuted,

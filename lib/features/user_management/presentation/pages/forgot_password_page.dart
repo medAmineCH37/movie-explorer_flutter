@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/navigation/app_shell.dart';
+
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
 
@@ -45,8 +47,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       if (!mounted) return;
 
       setState(() {
-        _message =
-            "✓ E-mail de confirmation envoyé. Redirection dans 3 secondes...";
+        _message = "✓ Confirmation e-mail sent. Redirecting in 3 seconds...";
       });
 
       // 🟢 Redirection automatique vers la connexion après 3 secondes
@@ -58,7 +59,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     } on AuthException catch (e) {
       setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = "Une erreur est survenue : $e");
+      setState(() => _error = "Something went wrong: $e");
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -78,14 +79,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: textPrimary,
-            size: 18,
-          ),
-          onPressed: () => context.go('/login'),
+        leading: ShellLeading(
+          onBack: () => context.go('/login'),
+          color: textPrimary,
         ),
+        leadingWidth: shellLeadingWidth(context, customBack: true),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -101,7 +99,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   Icon(Icons.lock_reset_rounded, size: 64, color: accentGold),
                   const SizedBox(height: 20),
                   Text(
-                    'RÉCUPÉRATION COMPTE',
+                    'ACCOUNT RECOVERY',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: accentGold,
@@ -112,7 +110,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Mot de passe oublié',
+                    'Forgot password',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: textPrimary,
@@ -130,11 +128,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       fontWeight: FontWeight.bold,
                     ),
                     decoration: const InputDecoration(
-                      labelText: 'VOTRE ADRESSE E-MAIL',
+                      labelText: 'YOUR E-MAIL ADDRESS',
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
                     validator: (val) => val == null || !val.contains('@')
-                        ? 'Entrez une adresse valide.'
+                        ? 'Enter a valid e-mail address.'
                         : null,
                   ),
                   const SizedBox(height: 24),
@@ -160,7 +158,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               ),
                             )
                           : const Text(
-                              'ENVOYER LE LIEN',
+                              'SEND THE LINK',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w900,
@@ -216,7 +214,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     OutlinedButton.icon(
                       onPressed: () => context.go('/login'),
                       icon: const Icon(Icons.arrow_back, size: 16),
-                      label: const Text('REVENIR DE SUITE À LA CONNEXION'),
+                      label: const Text('BACK TO SIGN IN'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: accentGold,
                         side: BorderSide(color: accentGold),

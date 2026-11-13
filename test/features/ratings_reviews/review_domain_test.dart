@@ -12,11 +12,11 @@ import 'fake_reviews_repository.dart';
 void main() {
   group('ReviewRules', () {
     test('score labels', () {
-      expect(ReviewRules.scoreLabel(1), 'Mauvais');
-      expect(ReviewRules.scoreLabel(2), 'Moyen');
-      expect(ReviewRules.scoreLabel(3), 'Bien');
-      expect(ReviewRules.scoreLabel(4), 'Très bien');
-      expect(ReviewRules.scoreLabel(5), "Chef-d'œuvre");
+      expect(ReviewRules.scoreLabel(1), 'Poor');
+      expect(ReviewRules.scoreLabel(2), 'Average');
+      expect(ReviewRules.scoreLabel(3), 'Good');
+      expect(ReviewRules.scoreLabel(4), 'Very good');
+      expect(ReviewRules.scoreLabel(5), 'Masterpiece');
       expect(ReviewRules.scoreLabel(null), isNull);
     });
 

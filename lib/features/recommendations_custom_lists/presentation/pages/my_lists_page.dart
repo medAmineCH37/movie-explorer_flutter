@@ -66,7 +66,9 @@ class _MyListsPageState extends State<MyListsPage> {
     if (_controller.repository.currentUserId == null) {
       return Scaffold(
         appBar: AppBar(
-          leading: shellMenuButton(context),
+          leading: const ShellLeading(),
+
+          leadingWidth: shellLeadingWidth(context),
           title: const Text('My lists'),
         ),
         body: Center(
@@ -84,7 +86,9 @@ class _MyListsPageState extends State<MyListsPage> {
         final visible = c.visible;
         return Scaffold(
           appBar: AppBar(
-            leading: shellMenuButton(context),
+            leading: const ShellLeading(),
+
+            leadingWidth: shellLeadingWidth(context),
             title: const Text(
               'My lists',
               style: TextStyle(fontWeight: FontWeight.w800),

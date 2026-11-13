@@ -11,6 +11,7 @@ import '../controllers/collection_controller.dart';
 import '../widgets/collection_empty_state.dart';
 import '../widgets/collection_movie_card.dart';
 import '../widgets/collection_tabs.dart';
+import '../../../../core/navigation/app_shell.dart';
 
 class CollectionPage extends StatefulWidget {
   const CollectionPage({super.key});
@@ -122,11 +123,8 @@ class _CollectionPageState extends State<CollectionPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Collection'),
-        leading: IconButton(
-          onPressed: () => context.go('/'),
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Back to home',
-        ),
+        leading: ShellLeading(onBack: () => context.go('/')),
+        leadingWidth: shellLeadingWidth(context, customBack: true),
       ),
       body: AnimatedBuilder(
         animation: _controller,
@@ -494,10 +492,8 @@ class _CollectionPageState extends State<CollectionPage> {
   Widget _signInPage() => Scaffold(
     appBar: AppBar(
       title: const Text('My Collection'),
-      leading: IconButton(
-        onPressed: () => context.go('/'),
-        icon: const Icon(Icons.arrow_back),
-      ),
+      leading: ShellLeading(onBack: () => context.go('/')),
+      leadingWidth: shellLeadingWidth(context, customBack: true),
     ),
     body: Center(
       child: Padding(

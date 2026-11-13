@@ -10,6 +10,7 @@ import '../relative_time.dart';
 import '../widgets/review_composer_sheet.dart';
 import '../widgets/review_dialogs.dart';
 import '../widgets/star_rating.dart';
+import '../../../../core/navigation/app_shell.dart';
 
 /// Everything the signed-in user rated or reviewed.
 class MyRatingsPage extends StatefulWidget {
@@ -43,7 +44,11 @@ class _MyRatingsPageState extends State<MyRatingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My ratings & reviews')),
+      appBar: AppBar(
+        leading: const ShellLeading(),
+        leadingWidth: shellLeadingWidth(context),
+        title: const Text('My ratings & reviews'),
+      ),
       body: ListenableBuilder(
         listenable: _controller,
         builder: (context, _) {

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/models/user_model.dart';
 import '../../data/services/auth_service.dart';
+import '../../../../core/navigation/app_shell.dart';
 
 class UserDetailPage extends StatefulWidget {
   final String userId;
@@ -70,7 +71,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
         elevation: 0,
         shape: Border(bottom: BorderSide(color: borderSubtle, width: 1)),
         title: Text(
-          'Fiche Membre CinéHub',
+          'Member profile',
           style: TextStyle(
             color: textPrimary,
             fontSize: 18,
@@ -81,12 +82,12 @@ class _UserDetailPageState extends State<UserDetailPage> {
             ? const []
             : [
                 IconButton(
-                  tooltip: 'Modifier le compte',
+                  tooltip: 'Edit account',
                   onPressed: () => _editUser(_currentUser!),
                   icon: const Icon(Icons.edit_outlined),
                 ),
                 IconButton(
-                  tooltip: 'Supprimer le compte',
+                  tooltip: 'Delete account',
                   onPressed: _currentUser!.id == _authService.currentUser?.id
                       ? null
                       : () => _confirmDeleteUser(_currentUser!),
@@ -96,14 +97,11 @@ class _UserDetailPageState extends State<UserDetailPage> {
                   ),
                 ),
               ],
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: textPrimary,
-            size: 18,
-          ),
-          onPressed: () => context.pop(true),
+        leading: ShellLeading(
+          onBack: () => context.pop(true),
+          color: textPrimary,
         ),
+        leadingWidth: shellLeadingWidth(context, customBack: true),
       ),
       body: _buildContent(),
     );
@@ -126,12 +124,11 @@ class _UserDetailPageState extends State<UserDetailPage> {
       await _fetchUser();
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Compte mis à jour.')));
+          .showSnackBar(const SnackBar(content: Text('Account updated.')));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Échec de la mise à jour : $error')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Update failed: $error')));
     }
   }
 
@@ -139,19 +136,19 @@ class _UserDetailPageState extends State<UserDetailPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Supprimer ce compte ?'),
+        title: const Text('Delete this account?'),
         content: Text(
-          'Le compte de ${user.name} (${user.email}) et ses données liées seront supprimés définitivement.',
+          'The account of ${user.name} (${user.email}) and its related data will be permanently deleted.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Annuler'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Supprimer'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -163,9 +160,8 @@ class _UserDetailPageState extends State<UserDetailPage> {
       if (mounted) context.pop(true);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Échec de la suppression : $error')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Delete failed: $error')));
     }
   }
 
@@ -177,7 +173,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
     if (_hasError || _currentUser == null) {
       return Center(
         child: Text(
-          'Compte utilisateur introuvable.',
+          'User account not found.',
           style: TextStyle(color: textMuted, fontSize: 14),
         ),
       );
@@ -229,7 +225,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                       Text(
                         user.email.isNotEmpty
                             ? user.email
-                            : 'Adresse e-mail non disponible',
+                            : 'E-mail address not available',
                         style: TextStyle(color: textMuted, fontSize: 13),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -253,14 +249,14 @@ class _UserDetailPageState extends State<UserDetailPage> {
               children: [
                 // ID système sécurisé sans débordement
                 _buildDetailRow(
-                  'ID Système',
+                  'System ID',
                   user.id,
                   icon: Icons.fingerprint,
                   isIdField: true,
                 ),
                 const Divider(height: 24),
                 _buildDetailRow(
-                  'Rôle actuel',
+                  'Current role',
                   user.role.toUpperCase(),
                   badgeColor: isAdmin
                       ? const Color(0xFFF6EDDA)
@@ -269,8 +265,8 @@ class _UserDetailPageState extends State<UserDetailPage> {
                 ),
                 const Divider(height: 24),
                 _buildDetailRow(
-                  'Statut du compte',
-                  user.valide ? 'Compte Validé (Actif)' : 'Compte Bloqué',
+                  'Account status',
+                  user.valide ? 'Active account' : 'Blocked account',
                   badgeColor: user.valide
                       ? const Color(0xFFE3F0E9)
                       : const Color(0xFFFDE8E6),
@@ -311,7 +307,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     messenger.showSnackBar(
                       SnackBar(
                         content: Text(
-                          newStatus ? 'Compte activé' : 'Compte bloqué',
+                          newStatus ? 'Account activated' : 'Account blocked',
                         ),
                         duration: const Duration(seconds: 2),
                       ),
@@ -329,7 +325,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     ),
                   ),
                   child: Text(
-                    user.valide ? 'BLOQUER LE COMPTE' : 'ACTIVATION DU COMPTE',
+                    user.valide ? 'BLOCK ACCOUNT' : 'ACTIVATE ACCOUNT',
                     style: TextStyle(
                       color: user.valide
                           ? const Color(0xFF96443C)
@@ -364,7 +360,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     messenger.showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Rôle modifié en : ${nextRole.toUpperCase()}',
+                          'Role changed to: ${nextRole.toUpperCase()}',
                         ),
                         duration: const Duration(seconds: 2),
                       ),
@@ -379,7 +375,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     ),
                   ),
                   child: Text(
-                    isAdmin ? 'RÉTROGRADER USER' : 'NOMMER ADMIN 🔵',
+                    isAdmin ? 'DEMOTE TO USER' : 'NOMMER ADMIN 🔵',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -493,7 +489,7 @@ class _EditManagedUserDialogState extends State<_EditManagedUserDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Modifier le compte'),
+      title: const Text('Edit account'),
       content: Form(
         key: _formKey,
         child: Column(
@@ -502,11 +498,11 @@ class _EditManagedUserDialogState extends State<_EditManagedUserDialog> {
             TextFormField(
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Nom affiché'),
+              decoration: const InputDecoration(labelText: 'Display name'),
               validator: (value) {
                 final name = value?.trim() ?? '';
                 if (name.length < 2 || name.length > 80) {
-                  return 'Le nom doit contenir entre 2 et 80 caractères.';
+                  return 'The name must be 2 to 80 characters long.';
                 }
                 return null;
               },
@@ -516,13 +512,13 @@ class _EditManagedUserDialogState extends State<_EditManagedUserDialog> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
-                labelText: 'Adresse e-mail',
-                helperText: 'Le changement est appliqué immédiatement.',
+                labelText: 'E-mail address',
+                helperText: 'The change applies immediately.',
               ),
               validator: (value) {
                 final email = value?.trim() ?? '';
                 if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
-                  return 'Saisissez une adresse e-mail valide.';
+                  return 'Enter a valid e-mail address.';
                 }
                 return null;
               },
@@ -533,7 +529,7 @@ class _EditManagedUserDialogState extends State<_EditManagedUserDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler'),
+          child: const Text('Cancel'),
         ),
         FilledButton(
           onPressed: () {
@@ -543,7 +539,7 @@ class _EditManagedUserDialogState extends State<_EditManagedUserDialog> {
               'email': _emailController.text.trim(),
             });
           },
-          child: const Text('Enregistrer'),
+          child: const Text('Save'),
         ),
       ],
     );

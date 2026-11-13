@@ -124,7 +124,7 @@ class _CineaAppBarState extends ConsumerState<CineaAppBar> {
                     color: textPrimary,
                   ),
                   title: const Text(
-                    'Mon Profil',
+                    'My profile',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
@@ -145,7 +145,7 @@ class _CineaAppBarState extends ConsumerState<CineaAppBar> {
                       color: accentGold,
                     ),
                     title: Text(
-                      'Gestion des Comptes & Rôles',
+                      'Accounts & roles',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -153,7 +153,7 @@ class _CineaAppBarState extends ConsumerState<CineaAppBar> {
                       ),
                     ),
                     subtitle: const Text(
-                      'Modération des membres & privilèges',
+                      'Member moderation & privileges',
                       style: TextStyle(fontSize: 11),
                     ),
                     onTap: () {
@@ -170,7 +170,7 @@ class _CineaAppBarState extends ConsumerState<CineaAppBar> {
                     color: Color(0xFF96443C),
                   ),
                   title: const Text(
-                    'Se déconnecter',
+                    'Sign out',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -207,7 +207,9 @@ class _CineaAppBarState extends ConsumerState<CineaAppBar> {
     final isLoading = authState.isLoading;
 
     return AppBar(
-      leading: shellMenuButton(context),
+      leading: const ShellLeading(),
+
+      leadingWidth: shellLeadingWidth(context),
       backgroundColor: surfaceWhite,
       elevation: 0,
       shape: Border(bottom: BorderSide(color: borderSubtle, width: 1)),

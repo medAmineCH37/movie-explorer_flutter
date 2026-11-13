@@ -85,7 +85,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Très bien'), findsOneWidget);
+      expect(find.text('Very good'), findsOneWidget);
       expect(find.textContaining('edited'), findsOneWidget);
       expect(find.text('2 likes'), findsOneWidget);
       expect(find.text('Z'), findsOneWidget);
@@ -165,7 +165,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel(RegExp(r'^5 stars')));
     await tester.pumpAndSettle();
     expect(value, 5);
-    expect(find.text("Chef-d'œuvre"), findsOneWidget);
+    expect(find.text('Masterpiece'), findsOneWidget);
   });
 
   group('Report dialog', () {

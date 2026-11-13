@@ -83,7 +83,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return UserModel(
           id: userId,
           email: email,
-          name: email.isNotEmpty ? email.split('@').first : 'Cinéphile',
+          name: email.isNotEmpty ? email.split('@').first : 'Movie fan',
           role: 'user',
           valide: true,
         );

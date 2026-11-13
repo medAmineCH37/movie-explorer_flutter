@@ -53,7 +53,9 @@ class _ForYouPageState extends State<ForYouPage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        leading: shellMenuButton(context),
+        leading: const ShellLeading(),
+
+        leadingWidth: shellLeadingWidth(context),
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         title: const Text(
@@ -99,9 +101,14 @@ class _ForYouPageState extends State<ForYouPage> {
                 MovieRail(
                   items: recos.length > 5 ? recos.skip(5).toList() : recos,
                   loading: loading,
+                  showAddButton: true,
                 ),
                 const SectionHeader('Top 10 this week'),
-                Top10Rail(movies: c.trending, loading: loading),
+                Top10Rail(
+                  movies: c.trending,
+                  loading: loading,
+                  showAddButton: true,
+                ),
                 if (c.signedIn) ...[
                   SectionHeader(
                     'My lists',
@@ -112,7 +119,7 @@ class _ForYouPageState extends State<ForYouPage> {
                 ],
                 for (final row in c.genreRows) ...[
                   SectionHeader(row.name),
-                  MovieRail(items: row.movies),
+                  MovieRail(items: row.movies, showAddButton: true),
                 ],
               ],
             ),

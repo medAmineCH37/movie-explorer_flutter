@@ -37,6 +37,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: authRefresh,
     initialLocation: '/',
     routes: [
+      // Every page is wrapped in the shell so the side menu is available everywhere.
       ShellRoute(
         builder: (context, state, child) =>
             AppShell(location: state.uri.path, child: child),
@@ -66,147 +67,153 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) =>
                 _withBackFallback(context, const ProfilePage()),
           ),
-        ],
-      ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) =>
-            _withBackFallback(context, const LoginPage()),
-      ),
-      GoRoute(
-        path: '/register',
-        builder: (context, state) =>
-            _withBackFallback(context, const RegisterPage()),
-      ),
-      GoRoute(path: '/auth/login', redirect: (context, state) => '/login'),
-      GoRoute(
-        path: '/auth/register',
-        redirect: (context, state) => '/register',
-      ),
-      GoRoute(
-        path: '/forgot-password',
-        builder: (context, state) =>
-            _withBackFallback(context, const ForgotPasswordPage()),
-      ),
-      GoRoute(
-        path: '/reset-password',
-        builder: (context, state) =>
-            _withBackFallback(context, const ResetPasswordPage()),
-      ),
-      GoRoute(
-        path: '/collection',
-        builder: (context, state) =>
-            _withBackFallback(context, const CollectionPage()),
-      ),
-      GoRoute(
-        path: '/my-ratings',
-        builder: (context, state) =>
-            _withBackFallback(context, const MyRatingsPage()),
-      ),
-      GoRoute(
-        path: '/lists/community',
-        builder: (context, state) =>
-            _withBackFallback(context, const CommunityListsPage()),
-      ),
-      GoRoute(
-        path: '/lists/:listId',
-        builder: (context, state) {
-          final listId = int.tryParse(state.pathParameters['listId'] ?? '');
-          if (listId == null) {
-            return const Scaffold(body: Center(child: Text('Invalid list ID')));
-          }
-          return _withBackFallback(context, ListDetailPage(listId: listId));
-        },
-      ),
-      GoRoute(
-        path: '/subscription',
-        builder: (context, state) => _withBackFallback(
-          context,
-          SubscriptionPage(
-            sessionId: state.uri.queryParameters['session_id'],
-            checkout: state.uri.queryParameters['checkout'],
+          GoRoute(
+            path: '/login',
+            builder: (context, state) =>
+                _withBackFallback(context, const LoginPage()),
           ),
-        ),
-      ),
-      GoRoute(
-        path: '/admin/subscriptions',
-        builder: (context, state) =>
-            _withBackFallback(context, const AdminSubscriptionsPage()),
-      ),
-      GoRoute(
-        path: '/module/user-management',
-        builder: (context, state) =>
-            _withBackFallback(context, const UserManagementPage()),
-      ),
-      GoRoute(
-        path: '/module/user-management/:id',
-        builder: (context, state) => _withBackFallback(
-          context,
-          UserDetailPage(userId: state.pathParameters['id'] ?? ''),
-        ),
-      ),
-      GoRoute(
-        path: '/movies',
-        builder: (context, state) => _withBackFallback(
-          context,
-          MovieCatalogPage(
-            initialCategory: MovieCategory.fromSlug(
-              state.uri.queryParameters['category'],
+          GoRoute(
+            path: '/register',
+            builder: (context, state) =>
+                _withBackFallback(context, const RegisterPage()),
+          ),
+          GoRoute(path: '/auth/login', redirect: (context, state) => '/login'),
+          GoRoute(
+            path: '/auth/register',
+            redirect: (context, state) => '/register',
+          ),
+          GoRoute(
+            path: '/forgot-password',
+            builder: (context, state) =>
+                _withBackFallback(context, const ForgotPasswordPage()),
+          ),
+          GoRoute(
+            path: '/reset-password',
+            builder: (context, state) =>
+                _withBackFallback(context, const ResetPasswordPage()),
+          ),
+          GoRoute(
+            path: '/collection',
+            builder: (context, state) =>
+                _withBackFallback(context, const CollectionPage()),
+          ),
+          GoRoute(
+            path: '/my-ratings',
+            builder: (context, state) =>
+                _withBackFallback(context, const MyRatingsPage()),
+          ),
+          GoRoute(
+            path: '/lists/community',
+            builder: (context, state) =>
+                _withBackFallback(context, const CommunityListsPage()),
+          ),
+          GoRoute(
+            path: '/lists/:listId',
+            builder: (context, state) {
+              final listId = int.tryParse(state.pathParameters['listId'] ?? '');
+              if (listId == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Invalid list ID')),
+                );
+              }
+              return _withBackFallback(context, ListDetailPage(listId: listId));
+            },
+          ),
+          GoRoute(
+            path: '/subscription',
+            builder: (context, state) => _withBackFallback(
+              context,
+              SubscriptionPage(
+                sessionId: state.uri.queryParameters['session_id'],
+                checkout: state.uri.queryParameters['checkout'],
+              ),
             ),
           ),
-        ),
-        routes: [
           GoRoute(
-            path: 'new',
+            path: '/admin/subscriptions',
             builder: (context, state) =>
-                _withBackFallback(context, const MovieFormPage()),
+                _withBackFallback(context, const AdminSubscriptionsPage()),
+          ),
+          GoRoute(
+            path: '/module/user-management',
+            builder: (context, state) =>
+                _withBackFallback(context, const UserManagementPage()),
+          ),
+          GoRoute(
+            path: '/module/user-management/:id',
+            builder: (context, state) => _withBackFallback(
+              context,
+              UserDetailPage(userId: state.pathParameters['id'] ?? ''),
+            ),
+          ),
+          GoRoute(
+            path: '/movies',
+            builder: (context, state) => _withBackFallback(
+              context,
+              MovieCatalogPage(
+                initialCategory: MovieCategory.fromSlug(
+                  state.uri.queryParameters['category'],
+                ),
+              ),
+            ),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) =>
+                    _withBackFallback(context, const MovieFormPage()),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/movie/:movieId/edit',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['movieId'] ?? '');
+              return id == null
+                  ? const Scaffold(
+                      body: Center(child: Text('Invalid movie ID')),
+                    )
+                  : _withBackFallback(context, MovieFormPage(movieId: id));
+            },
+          ),
+          GoRoute(
+            path: '/movie/:movieId/reviews',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['movieId'] ?? '');
+              if (id == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Invalid movie ID')),
+                );
+              }
+              final movie = state.extra is Movie ? state.extra as Movie : null;
+              return _withBackFallback(
+                context,
+                AllReviewsPage(movieId: id, movie: movie),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/movie/:movieId',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['movieId'] ?? '');
+              return id == null
+                  ? const Scaffold(
+                      body: Center(child: Text('Invalid movie ID')),
+                    )
+                  : _withBackFallback(context, MovieDetailsPage(movieId: id));
+            },
+          ),
+          // Former TMDB search screen, now part of Discovery.
+          GoRoute(path: '/search', redirect: (context, state) => '/discover'),
+          GoRoute(
+            path: '/module/:moduleId',
+            builder: (context, state) => _withBackFallback(
+              context,
+              ModulePlaceholderPage(
+                moduleId: state.pathParameters['moduleId'] ?? '',
+              ),
+            ),
           ),
         ],
-      ),
-      GoRoute(
-        path: '/movie/:movieId/edit',
-        builder: (context, state) {
-          final id = int.tryParse(state.pathParameters['movieId'] ?? '');
-          return id == null
-              ? const Scaffold(body: Center(child: Text('Invalid movie ID')))
-              : _withBackFallback(context, MovieFormPage(movieId: id));
-        },
-      ),
-      GoRoute(
-        path: '/movie/:movieId/reviews',
-        builder: (context, state) {
-          final id = int.tryParse(state.pathParameters['movieId'] ?? '');
-          if (id == null) {
-            return const Scaffold(
-              body: Center(child: Text('Invalid movie ID')),
-            );
-          }
-          final movie = state.extra is Movie ? state.extra as Movie : null;
-          return _withBackFallback(
-            context,
-            AllReviewsPage(movieId: id, movie: movie),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/movie/:movieId',
-        builder: (context, state) {
-          final id = int.tryParse(state.pathParameters['movieId'] ?? '');
-          return id == null
-              ? const Scaffold(body: Center(child: Text('Invalid movie ID')))
-              : _withBackFallback(context, MovieDetailsPage(movieId: id));
-        },
-      ),
-      // Former TMDB search screen, now part of Discovery.
-      GoRoute(path: '/search', redirect: (context, state) => '/discover'),
-      GoRoute(
-        path: '/module/:moduleId',
-        builder: (context, state) => _withBackFallback(
-          context,
-          ModulePlaceholderPage(
-            moduleId: state.pathParameters['moduleId'] ?? '',
-          ),
-        ),
       ),
     ],
     redirect: (context, state) {

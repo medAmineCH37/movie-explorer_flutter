@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/models/user_model.dart';
 import '../../data/services/auth_service.dart';
 import '../providers/auth_provider.dart';
+import '../../../../core/navigation/app_shell.dart';
 
 bool _globalPushNotificationsEnabled = false;
 
@@ -78,7 +79,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
         if (context.mounted) context.go('/');
       });
       return const Scaffold(
-        body: Center(child: Text('Accès refusé. Redirection...')),
+        body: Center(child: Text('Access denied. Redirecting...')),
       );
     }
 
@@ -91,21 +92,18 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
         elevation: 0,
         shape: Border(bottom: BorderSide(color: borderSubtle, width: 1)),
         title: Text(
-          'Gestion des Comptes & Rôles',
+          'Accounts & roles',
           style: TextStyle(
             color: textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: textPrimary,
-            size: 18,
-          ),
-          onPressed: () => context.go('/'),
+        leading: ShellLeading(
+          onBack: () => context.go('/'),
+          color: textPrimary,
         ),
+        leadingWidth: shellLeadingWidth(context, customBack: true),
       ),
       body: RefreshIndicator(
         onRefresh: _loadUsers,
@@ -116,7 +114,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Panneau de modération et d\'administration de la plateforme CinéHub',
+                'CinéHub moderation and administration panel',
                 style: TextStyle(
                   color: textMuted,
                   fontSize: 13,
@@ -139,7 +137,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'ABONNEMENT AUX NOTIFICATIONS',
+                            'NOTIFICATION SUBSCRIPTION',
                             style: TextStyle(
                               color: textPrimary,
                               fontSize: 11,
@@ -149,7 +147,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Activez la réception des alertes système en tâche de fond pour recevoir les notifications de modération.',
+                            'Turn on background system alerts to receive moderation notifications.',
                             style: TextStyle(color: textMuted, fontSize: 12),
                           ),
                         ],
@@ -172,8 +170,8 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                       ),
                       label: Text(
                         _globalPushNotificationsEnabled
-                            ? 'DÉSACTIVER PUSH'
-                            : 'ACTIVER PUSH',
+                            ? 'TURN OFF PUSH'
+                            : 'TURN ON PUSH',
                         style: TextStyle(
                           color: accentGold,
                           fontSize: 10,
@@ -210,7 +208,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                     color: surfaceWhite,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Text('Aucun utilisateur trouvé.'),
+                  child: const Text('No user found.'),
                 )
               else
                 ListView.separated(
@@ -309,7 +307,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                                 child: Text(
                                   user.email.isNotEmpty
                                       ? user.email
-                                      : 'Email non disponible',
+                                      : 'E-mail not available',
                                   style: TextStyle(
                                     color: textMuted,
                                     fontSize: 13,
@@ -334,7 +332,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    user.valide ? 'Validé' : 'Bloqué',
+                                    user.valide ? 'Active' : 'Blocked',
                                     style: TextStyle(
                                       color: user.valide
                                           ? const Color(0xFF2E6045)
@@ -375,7 +373,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                                         ),
                                       ),
                                       child: Text(
-                                        user.valide ? 'Bloquer' : 'Activer',
+                                        user.valide ? 'Block' : 'Activate',
                                         style: TextStyle(
                                           color: user.valide
                                               ? const Color(0xFF96443C)
@@ -414,7 +412,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                                               messenger.showSnackBar(
                                                 SnackBar(
                                                   content: Text(
-                                                    'Rôle modifié en : ${nextRole.toUpperCase()}',
+                                                    'Role changed to: ${nextRole.toUpperCase()}',
                                                   ),
                                                   duration: const Duration(
                                                     seconds: 2,
@@ -434,9 +432,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                                         ),
                                       ),
                                       child: Text(
-                                        isAdmin
-                                            ? 'RÉTROGRADER'
-                                            : 'NOMMER ADMIN 🛡️',
+                                        isAdmin ? 'DEMOTE' : 'NOMMER ADMIN 🛡️',
                                         style: TextStyle(
                                           color: isSelf
                                               ? textMuted

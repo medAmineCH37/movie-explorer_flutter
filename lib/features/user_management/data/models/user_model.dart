@@ -21,7 +21,7 @@ class UserModel {
       id: profileJson['id']?.toString() ?? '',
       email: authEmail,
       name:
-          profileJson['display_name'] ?? profileJson['username'] ?? 'Cinéphile',
+          profileJson['display_name'] ?? profileJson['username'] ?? 'Movie fan',
       role: profileJson['role'] ?? 'user',
       valide: profileJson['valide'] ?? true,
     );

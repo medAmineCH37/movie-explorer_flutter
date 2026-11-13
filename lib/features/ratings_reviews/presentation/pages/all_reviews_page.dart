@@ -9,6 +9,7 @@ import '../../domain/repositories/reviews_repository.dart';
 import '../controllers/all_reviews_controller.dart';
 import '../widgets/rating_summary_card.dart';
 import '../widgets/review_actions.dart';
+import '../../../../core/navigation/app_shell.dart';
 
 /// Every review of a movie, sortable, 10 per page.
 class AllReviewsPage extends StatefulWidget {
@@ -81,7 +82,11 @@ class _AllReviewsPageState extends State<AllReviewsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Reviews')),
+      appBar: AppBar(
+        leading: const ShellLeading(),
+        leadingWidth: shellLeadingWidth(context),
+        title: const Text('Reviews'),
+      ),
       body: ListenableBuilder(
         listenable: _controller,
         builder: (context, _) {

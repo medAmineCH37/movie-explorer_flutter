@@ -15,10 +15,18 @@ void openMovie(BuildContext context, int movieId) =>
 
 /// Horizontal row of posters, Netflix style. Long press: add to a list.
 class MovieRail extends StatelessWidget {
-  const MovieRail({required this.items, super.key, this.loading = false});
+  const MovieRail({
+    required this.items,
+    super.key,
+    this.loading = false,
+    this.showAddButton = false,
+  });
 
   final List<RecommendedMovie> items;
   final bool loading;
+
+  /// Shows the "+" add-to-list button on each poster.
+  final bool showAddButton;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +43,7 @@ class MovieRail extends StatelessWidget {
                 height: _posterHeight,
                 radius: RecoUi.radius,
               )
-            : MoviePosterCard(item: items[index]),
+            : MoviePosterCard(item: items[index], showAddButton: showAddButton),
       ),
     );
   }
@@ -46,10 +54,12 @@ class MoviePosterCard extends StatelessWidget {
     required this.item,
     super.key,
     this.width = _posterWidth,
+    this.showAddButton = false,
   });
 
   final RecommendedMovie item;
   final double width;
+  final bool showAddButton;
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +86,11 @@ class MoviePosterCard extends StatelessWidget {
                     bottom: 6,
                     child: MatchBadge(item.match!, compact: true),
                   ),
-                PosterQuickActions(movieId: movie.id, compact: true),
+                PosterQuickActions(
+                  movieId: movie.id,
+                  compact: true,
+                  showAddButton: showAddButton,
+                ),
               ],
             ),
             const SizedBox(height: 6),
@@ -105,10 +119,16 @@ class MoviePosterCard extends StatelessWidget {
 
 /// "Top 10 this week": large outlined rank number behind each poster.
 class Top10Rail extends StatelessWidget {
-  const Top10Rail({required this.movies, super.key, this.loading = false});
+  const Top10Rail({
+    required this.movies,
+    super.key,
+    this.loading = false,
+    this.showAddButton = false,
+  });
 
   final List<TmdbCandidate> movies;
   final bool loading;
+  final bool showAddButton;
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +173,11 @@ class Top10Rail extends StatelessWidget {
                         fit: StackFit.expand,
                         children: [
                           PosterImage(url: movie.posterUrl, width: 110),
-                          PosterQuickActions(movieId: movie.id, compact: true),
+                          PosterQuickActions(
+                            movieId: movie.id,
+                            compact: true,
+                            showAddButton: showAddButton,
+                          ),
                         ],
                       ),
                     ),

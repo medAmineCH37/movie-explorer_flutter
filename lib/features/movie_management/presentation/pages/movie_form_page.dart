@@ -10,6 +10,7 @@ import '../../domain/repositories/movies_repository.dart';
 import '../movie_formatters.dart';
 import '../widgets/movie_poster_image.dart';
 import '../widgets/movie_state_views.dart';
+import '../../../../core/navigation/app_shell.dart';
 
 /// Create (movieId == null) or edit a catalogue movie.
 ///
@@ -250,6 +251,8 @@ class _MovieFormPageState extends State<MovieFormPage> {
       },
       child: Scaffold(
         appBar: AppBar(
+          leading: const ShellLeading(),
+          leadingWidth: shellLeadingWidth(context),
           title: Text(_isEdit ? 'Edit movie' : 'Add a movie'),
           actions: [
             if (!_loading && _loadError == null)

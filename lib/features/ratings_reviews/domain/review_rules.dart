@@ -19,11 +19,11 @@ abstract final class ReviewRules {
   static const int pageSize = 10;
 
   static const Map<int, String> scoreLabels = {
-    1: 'Mauvais',
-    2: 'Moyen',
-    3: 'Bien',
-    4: 'Très bien',
-    5: "Chef-d'œuvre",
+    1: 'Poor',
+    2: 'Average',
+    3: 'Good',
+    4: 'Very good',
+    5: 'Masterpiece',
   };
 
   static String? scoreLabel(int? score) => scoreLabels[score];

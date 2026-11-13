@@ -7,6 +7,7 @@ import '../controllers/movie_catalog_controller.dart';
 import '../movie_actions.dart';
 import '../widgets/movie_card.dart';
 import '../widgets/movie_state_views.dart';
+import '../../../../core/navigation/app_shell.dart';
 
 /// Browsable catalogue: one tab per list, infinite scrolling grid, and an
 /// "Add movie" button.
@@ -56,6 +57,8 @@ class _MovieCatalogPageState extends State<MovieCatalogPage> {
       initialIndex: widget.initialCategory.index,
       child: Scaffold(
         appBar: AppBar(
+          leading: const ShellLeading(),
+          leadingWidth: shellLeadingWidth(context),
           title: const Text(
             'Movie catalogue',
             style: TextStyle(fontWeight: FontWeight.bold),

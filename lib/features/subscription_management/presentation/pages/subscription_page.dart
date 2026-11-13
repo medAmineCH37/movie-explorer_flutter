@@ -12,6 +12,7 @@ import '../widgets/current_plan_card.dart';
 import '../widgets/plan_card.dart';
 import '../widgets/price_breakdown.dart';
 import '../widgets/subscription_history.dart';
+import '../../../../core/navigation/app_shell.dart';
 
 class SubscriptionPage extends StatefulWidget {
   const SubscriptionPage({super.key, this.sessionId, this.checkout});
@@ -226,11 +227,8 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Subscription'),
-        leading: IconButton(
-          onPressed: () => context.go('/'),
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Back to home',
-        ),
+        leading: ShellLeading(onBack: () => context.go('/')),
+        leadingWidth: shellLeadingWidth(context, customBack: true),
         actions: [
           AnimatedBuilder(
             animation: _controller,

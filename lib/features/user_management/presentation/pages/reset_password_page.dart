@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/navigation/app_shell.dart';
+
 class ResetPasswordPage extends StatefulWidget {
   const ResetPasswordPage({super.key});
 
@@ -43,9 +45,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            '✓ Votre nouveau mot de passe secret a été configuré avec succès !',
-          ),
+          content: Text('✓ Your new password has been set!'),
           backgroundColor: Color(0xFF2E6045),
         ),
       );
@@ -53,7 +53,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     } on AuthException catch (e) {
       setState(() => _error = e.message);
     } catch (_) {
-      setState(() => _error = "Une erreur technique est survenue.");
+      setState(() => _error = "A technical error occurred.");
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -70,6 +70,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     final accentGold = colors.primary;
     return Scaffold(
       backgroundColor: bgIvory,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: const ShellLeading(),
+        leadingWidth: shellLeadingWidth(context),
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(28.0),
@@ -88,7 +94,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'SÉCURITÉ DU COMPTE',
+                    'ACCOUNT SECURITY',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: accentGold,
@@ -99,7 +105,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Nouveau mot de passe',
+                    'New password',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: textPrimary,
@@ -117,11 +123,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       fontWeight: FontWeight.w600,
                     ),
                     decoration: const InputDecoration(
-                      labelText: 'SAISISSEZ VOTRE NOUVELLE CLÉ',
+                      labelText: 'ENTER YOUR NEW PASSWORD',
                       prefixIcon: Icon(Icons.lock_outline_rounded),
                     ),
                     validator: (val) => val == null || val.length < 6
-                        ? 'Le mot de passe doit faire au moins 6 caractères.'
+                        ? 'The password must be at least 6 characters.'
                         : null,
                   ),
                   const SizedBox(height: 24),
@@ -147,7 +153,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                               ),
                             )
                           : const Text(
-                              'CONFIRMER LA MUTATION',
+                              'CONFIRM',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w900,
