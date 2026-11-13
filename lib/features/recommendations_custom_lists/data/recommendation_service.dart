@@ -19,8 +19,7 @@ abstract class RatingSignalSource {
   Future<RatingSignals> load(String userId);
 }
 
-/// Used until the Ratings & Reviews module is merged and its rating scale
-/// and "liked" threshold are confirmed.
+/// Source without ratings (tests, or when the ratings module is unavailable).
 class PendingRatingSignalSource implements RatingSignalSource {
   const PendingRatingSignalSource();
 
@@ -29,8 +28,7 @@ class PendingRatingSignalSource implements RatingSignalSource {
 }
 
 /// Reads the Ratings & Reviews module's 1–5 `ratings.score` values.
-/// Keep the pending source as the default until the product's liked threshold
-/// is agreed; using this adapter does not change recommendation ranking rules.
+/// Movies rated [likedMin] or more are signals; every rated movie is excluded.
 class ReviewsRatingSignalSource implements RatingSignalSource {
   ReviewsRatingSignalSource({required this.likedMin, SupabaseClient? client})
     : _client = client ?? Supabase.instance.client;
@@ -69,15 +67,21 @@ class RecommendationService {
     RecoTmdbService? tmdb,
     CustomListRepository? lists,
     SupabaseClient? client,
-    this.ratings = const PendingRatingSignalSource(),
+    RatingSignalSource? ratings,
   }) : tmdb = tmdb ?? RecoTmdbService(),
        _lists = lists ?? CustomListRepository(client: client),
-       _client = client ?? Supabase.instance.client;
+       _client = client ?? Supabase.instance.client,
+       ratings =
+           ratings ??
+           ReviewsRatingSignalSource(likedMin: likedRatingMin, client: client);
 
   final RecoTmdbService tmdb;
   final CustomListRepository _lists;
   final SupabaseClient _client;
   final RatingSignalSource ratings;
+
+  /// Movies rated 4 or 5 out of 5 are used as recommendation signals.
+  static const int likedRatingMin = 4;
 
   static const int _favoriteLimit = 10;
 
