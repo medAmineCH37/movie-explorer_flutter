@@ -1,6 +1,6 @@
 {
-    "name": "movie_explorer",
-    "short_name": "movie_explorer",
+    "name": "Movie Explorer",
+    "short_name": "Movie Explorer",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

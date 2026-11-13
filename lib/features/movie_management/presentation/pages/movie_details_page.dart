@@ -83,7 +83,7 @@ class _DetailsView extends StatelessWidget {
         SliverAppBar(
           expandedHeight: 280,
           pinned: true,
-          backgroundColor: const Color(0xFF101014),
+          backgroundColor: theme.scaffoldBackgroundColor,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             tooltip: 'Back',
@@ -94,12 +94,12 @@ class _DetailsView extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 MoviePosterImage(url: movie.backdropUrl ?? movie.posterUrl),
-                const DecoratedBox(
+                DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0x66101014), Color(0xFF101014)],
+                      colors: [Colors.black54, theme.scaffoldBackgroundColor],
                       stops: [0.35, 1],
                     ),
                   ),
@@ -131,7 +131,11 @@ class _DetailsView extends StatelessWidget {
                     for (final genre in movie.genres)
                       Chip(
                         label: Text(genre),
-                        backgroundColor: const Color(0xFF292433),
+                        backgroundColor: theme.colorScheme.secondaryContainer,
+                        labelStyle: TextStyle(
+                          color: theme.colorScheme.onSecondaryContainer,
+                        ),
+                        side: BorderSide.none,
                       ),
                   ],
                 ),
@@ -143,7 +147,7 @@ class _DetailsView extends StatelessWidget {
                     : 'No overview available for this movie.',
                 style: theme.textTheme.bodyLarge?.copyWith(
                   height: 1.6,
-                  color: Colors.white70,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               if (details.directors.isNotEmpty) ...[

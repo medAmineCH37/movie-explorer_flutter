@@ -35,6 +35,12 @@ class _CineaAppBarState extends ConsumerState<CineaAppBar> {
     final textMuted = colors.onSurfaceVariant;
     final accentGold = colors.primary;
     final isAdmin = user.role.toLowerCase() == 'admin';
+    final roleBadgeBackground = isAdmin
+        ? colors.primaryContainer
+        : colors.surfaceContainerHighest;
+    final roleBadgeForeground = isAdmin
+        ? colors.onPrimaryContainer
+        : colors.onSurfaceVariant;
 
     showModalBottomSheet(
       context: context,
@@ -91,15 +97,13 @@ class _CineaAppBarState extends ConsumerState<CineaAppBar> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: isAdmin
-                            ? const Color(0xFFF6EDDA)
-                            : const Color(0xFFF0F0F0),
+                        color: roleBadgeBackground,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         user.role.toUpperCase(),
                         style: TextStyle(
-                          color: isAdmin ? accentGold : textMuted,
+                          color: roleBadgeForeground,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),

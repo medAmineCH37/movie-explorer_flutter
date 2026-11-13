@@ -27,11 +27,20 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: authRefresh,
     initialLocation: '/',
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const HomePage()),
-      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+      GoRoute(
+        path: '/',
+        builder: (context, state) =>
+            _withBackFallback(context, const HomePage()),
+      ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) =>
+            _withBackFallback(context, const LoginPage()),
+      ),
       GoRoute(
         path: '/register',
-        builder: (context, state) => const RegisterPage(),
+        builder: (context, state) =>
+            _withBackFallback(context, const RegisterPage()),
       ),
       GoRoute(path: '/auth/login', redirect: (context, state) => '/login'),
       GoRoute(
@@ -40,38 +49,49 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/forgot-password',
-        builder: (context, state) => const ForgotPasswordPage(),
+        builder: (context, state) =>
+            _withBackFallback(context, const ForgotPasswordPage()),
       ),
       GoRoute(
         path: '/reset-password',
-        builder: (context, state) => const ResetPasswordPage(),
+        builder: (context, state) =>
+            _withBackFallback(context, const ResetPasswordPage()),
       ),
       GoRoute(
         path: '/collection',
-        builder: (context, state) => const CollectionPage(),
+        builder: (context, state) =>
+            _withBackFallback(context, const CollectionPage()),
       ),
       GoRoute(
         path: '/subscription',
-        builder: (context, state) => const SubscriptionPage(),
+        builder: (context, state) =>
+            _withBackFallback(context, const SubscriptionPage()),
       ),
       GoRoute(
         path: '/profile',
-        builder: (context, state) => const ProfilePage(),
+        builder: (context, state) =>
+            _withBackFallback(context, const ProfilePage()),
       ),
       GoRoute(
         path: '/module/user-management',
-        builder: (context, state) => const UserManagementPage(),
+        builder: (context, state) =>
+            _withBackFallback(context, const UserManagementPage()),
       ),
       GoRoute(
         path: '/module/user-management/:id',
-        builder: (context, state) =>
-            UserDetailPage(userId: state.pathParameters['id'] ?? ''),
+        builder: (context, state) => _withBackFallback(
+          context,
+          UserDetailPage(userId: state.pathParameters['id'] ?? ''),
+        ),
       ),
       GoRoute(
         path: '/movies',
-        builder: (context, state) => MovieCatalogPage(
-          initialCategory: MovieCategory.fromSlug(
-            state.uri.queryParameters['category'],
+        builder: (context, state) => _withBackFallback(
+          context,
+          MovieCatalogPage(
+            initialCategory: MovieCategory.fromSlug(
+              state.uri.queryParameters['category'],
+            ),
           ),
         ),
       ),
@@ -81,17 +101,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           final id = int.tryParse(state.pathParameters['movieId'] ?? '');
           return id == null
               ? const Scaffold(body: Center(child: Text('Invalid movie ID')))
-              : MovieDetailsPage(movieId: id);
+              : _withBackFallback(context, MovieDetailsPage(movieId: id));
         },
       ),
       GoRoute(
         path: '/search',
-        builder: (context, state) => const MovieSearchPage(),
+        builder: (context, state) =>
+            _withBackFallback(context, const MovieSearchPage()),
       ),
       GoRoute(
         path: '/module/:moduleId',
-        builder: (context, state) => ModulePlaceholderPage(
-          moduleId: state.pathParameters['moduleId'] ?? '',
+        builder: (context, state) => _withBackFallback(
+          context,
+          ModulePlaceholderPage(
+            moduleId: state.pathParameters['moduleId'] ?? '',
+          ),
         ),
       ),
     ],
@@ -122,9 +146,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       // Supabase authenticates the user when they open a recovery link. Keep
       // the reset form reachable for that authenticated recovery session.
-      if (authState.user != null &&
-          authPage &&
-          location != '/reset-password') {
+      if (authState.user != null && authPage && location != '/reset-password') {
         return '/';
       }
       if (location.startsWith('/module/user-management') &&
@@ -145,4 +167,28 @@ final routerProvider = Provider<GoRouter>((ref) {
 
 class _AuthRouterRefreshListenable extends ChangeNotifier {
   void refresh() => notifyListeners();
+}
+
+Widget _withBackFallback(BuildContext context, Widget child) =>
+    _BackNavigationFallback(router: GoRouter.of(context), child: child);
+
+class _BackNavigationFallback extends StatelessWidget {
+  const _BackNavigationFallback({required this.child, required this.router});
+
+  final Widget child;
+  final GoRouter router;
+
+  @override
+  Widget build(BuildContext context) {
+    final location = router.state.matchedLocation;
+    return PopScope<Object?>(
+      canPop: router.canPop() || location == '/',
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && router.state.matchedLocation != '/') {
+          router.go('/');
+        }
+      },
+      child: child,
+    );
+  }
 }
