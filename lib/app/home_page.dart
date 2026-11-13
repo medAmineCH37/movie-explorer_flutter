@@ -59,6 +59,12 @@ class _HomePageState extends State<HomePage> {
       description: 'Discover recommendations and create lists',
       icon: Icons.auto_awesome_outlined,
     ),
+    _ModuleItem(
+      id: 'subscription-management',
+      title: 'Subscription',
+      description: 'Plans and premium access',
+      icon: Icons.workspace_premium_outlined,
+    ),
   ];
 
   @override
@@ -108,6 +114,14 @@ class _HomePageState extends State<HomePage> {
                 ListTile(
                   leading: const Icon(Icons.email_outlined),
                   title: Text(user.email ?? 'No email available'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.workspace_premium_outlined),
+                  title: const Text('Subscription'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.push('/subscription');
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.logout),
@@ -331,6 +345,8 @@ class _HomePageState extends State<HomePage> {
                     onTap: () {
                       if (module.id == 'personal-collection') {
                         context.push('/collection');
+                      } else if (module.id == 'subscription-management') {
+                        context.push('/subscription');
                       } else {
                         context.push('/module/${module.id}');
                       }
