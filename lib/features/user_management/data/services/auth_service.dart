@@ -217,4 +217,36 @@ class AuthService implements AuthRepository {
         })
         .eq('id', userId);
   }
+
+  Future<void> updateManagedUser({
+    required String userId,
+    required String displayName,
+    required String email,
+  }) async {
+    final response = await _client.functions.invoke(
+      'admin-manage-user',
+      body: {
+        'action': 'update',
+        'userId': userId,
+        'displayName': displayName.trim(),
+        'email': email.trim(),
+      },
+    );
+    _throwFunctionError(response);
+  }
+
+  Future<void> deleteManagedUser(String userId) async {
+    final response = await _client.functions.invoke(
+      'admin-manage-user',
+      body: {'action': 'delete', 'userId': userId},
+    );
+    _throwFunctionError(response);
+  }
+
+  void _throwFunctionError(FunctionResponse response) {
+    if (response.status < 400) return;
+    final data = response.data;
+    final message = data is Map ? data['error']?.toString() : null;
+    throw Exception(message ?? 'Could not complete the user management action.');
+  }
 }

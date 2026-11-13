@@ -14,10 +14,12 @@ class ListRules {
   /// [existingNames]: the user's other list names (exclude the edited list).
   static String? validateName(String name, Iterable<String> existingNames) {
     final value = normalizeName(name);
-    if (value.length < nameMin)
+    if (value.length < nameMin) {
       return 'Name must be at least $nameMin characters.';
-    if (value.length > nameMax)
+    }
+    if (value.length > nameMax) {
       return 'Name must be at most $nameMax characters.';
+    }
     final lower = value.toLowerCase();
     if (existingNames.any((n) => normalizeName(n).toLowerCase() == lower)) {
       return 'You already have a list with this name.';
