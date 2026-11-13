@@ -6,10 +6,48 @@ import 'package:movie_explorer/features/subscription_management/presentation/con
 
 class FakeSubscriptionRepository implements SubscriptionRepository {
   final List<Subscription> rows = [];
+  final Map<String, PlanChange> sessions = {};
   int _nextId = 1;
   bool shouldThrow = false;
   bool admin = false;
   bool adminCheckFails = false;
+
+  Subscription? get _current {
+    final active = rows.where((row) => row.isActive).toList()
+      ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    return active.isEmpty ? null : active.first;
+  }
+
+  void _end(Subscription row, double refund) {
+    final index = rows.indexWhere((r) => r.id == row.id);
+    rows[index] = Subscription(
+      id: row.id,
+      plan: row.plan,
+      status: 'cancelled',
+      startedAt: row.startedAt,
+      endsAt: DateTime.now(),
+      amountPaid: row.amountPaid,
+      refundAmount: row.refundAmount + refund,
+      cardBrand: row.cardBrand,
+      cardLast4: row.cardLast4,
+    );
+  }
+
+  void _insert(SubscriptionPlan plan, double amount, {bool card = false}) {
+    final now = DateTime.now();
+    rows.add(
+      Subscription(
+        id: _nextId++,
+        plan: plan,
+        status: 'active',
+        startedAt: now.add(const Duration(milliseconds: 1)),
+        endsAt: now.add(Duration(days: plan.durationDays)),
+        amountPaid: amount,
+        cardBrand: card ? 'Visa' : null,
+        cardLast4: card ? '4242' : null,
+      ),
+    );
+  }
 
   @override
   Future<bool> isAdmin() async {
@@ -20,55 +58,68 @@ class FakeSubscriptionRepository implements SubscriptionRepository {
   @override
   Future<List<Subscription>> getSubscriptions() async {
     if (shouldThrow) throw Exception('Repository error');
-    final sorted = [...rows]
-      ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
-    return sorted;
+    return [...rows]..sort((a, b) => b.startedAt.compareTo(a.startedAt));
   }
 
   @override
-  Future<void> subscribe(SubscriptionPlan plan) async {
+  Future<CheckoutResult> checkout(
+    SubscriptionPlan plan,
+    String returnUrl,
+  ) async {
     if (shouldThrow) throw Exception('Repository error');
-    final now = DateTime.now();
-    for (var i = 0; i < rows.length; i++) {
-      if (rows[i].isActive) {
-        rows[i] = Subscription(
-          id: rows[i].id,
-          plan: rows[i].plan,
-          status: 'cancelled',
-          startedAt: rows[i].startedAt,
-          endsAt: now,
-        );
-      }
+    final change = PlanChange.to(plan, _current);
+    if (change.total > 0) {
+      final id = 'cs_test_${sessions.length + 1}';
+      sessions[id] = change;
+      return CheckoutResult(url: 'https://checkout.stripe.com/c/pay/$id');
     }
-    rows.add(
-      Subscription(
-        id: _nextId++,
-        plan: plan,
-        status: 'active',
-        startedAt: now.add(const Duration(milliseconds: 1)),
-        endsAt: now.add(Duration(days: plan.durationDays)),
-      ),
-    );
+    _end(change.from!, change.refund);
+    _insert(plan, 0);
+    return CheckoutResult(refund: change.refund);
   }
 
   @override
-  Future<void> cancel(int subscriptionId) async {
+  Future<void> confirmCheckout(String sessionId) async {
+    final change = sessions.remove(sessionId);
+    if (change == null) throw Exception('The payment was not completed.');
+    if (change.from != null) _end(change.from!, 0);
+    _insert(change.plan, change.total, card: true);
+  }
+
+  @override
+  Future<double> cancelWithRefund() async {
     if (shouldThrow) throw Exception('Repository error');
-    final index = rows.indexWhere((row) => row.id == subscriptionId);
-    final row = rows[index];
-    rows[index] = Subscription(
-      id: row.id,
-      plan: row.plan,
-      status: 'cancelled',
-      startedAt: row.startedAt,
-      endsAt: row.endsAt,
-    );
+    final current = _current!;
+    final refund = current.unusedValue;
+    _end(current, refund);
+    return refund;
   }
 }
 
 void main() {
   late FakeSubscriptionRepository repository;
   late SubscriptionController controller;
+
+  const returnUrl = 'http://localhost/#/subscription';
+
+  Future<void> payFor(SubscriptionPlan plan) async {
+    final result = await controller.checkout(plan, returnUrl);
+    await controller.confirmCheckout(result.url!.split('/').last);
+  }
+
+  void addRunning(SubscriptionPlan plan, {required int daysLeft}) {
+    final endsAt = DateTime.now().add(Duration(days: daysLeft, hours: 1));
+    repository.rows.add(
+      Subscription(
+        id: 50,
+        plan: plan,
+        status: 'active',
+        startedAt: endsAt.subtract(Duration(days: plan.durationDays)),
+        endsAt: endsAt,
+        amountPaid: plan.price,
+      ),
+    );
+  }
 
   setUp(() {
     repository = FakeSubscriptionRepository();
@@ -84,49 +135,124 @@ void main() {
       expect(controller.history, isEmpty);
     });
 
-    test('subscribes to a paid plan', () async {
-      await controller.subscribe(SubscriptionPlan.monthly);
+    test('paid plans go through Stripe checkout first', () async {
+      final result = await controller.checkout(
+        SubscriptionPlan.monthly,
+        returnUrl,
+      );
+
+      expect(result.url, startsWith('https://checkout.stripe.com/'));
+      expect(controller.currentPlan, SubscriptionPlan.free);
+    });
+
+    test('a confirmed payment activates the plan', () async {
+      await payFor(SubscriptionPlan.monthly);
 
       expect(controller.currentPlan, SubscriptionPlan.monthly);
       expect(controller.current!.daysLeft, 30);
-      expect(controller.current!.isCancelled, isFalse);
+      expect(controller.current!.amountPaid, 2.99);
+      expect(controller.current!.card!.label, 'Visa •••• 4242');
     });
 
-    test('switching plans moves the old plan to history', () async {
-      await controller.subscribe(SubscriptionPlan.monthly);
-      await controller.subscribe(SubscriptionPlan.yearly);
-
-      expect(controller.currentPlan, SubscriptionPlan.yearly);
-      expect(controller.history, hasLength(1));
-      expect(controller.history.first.plan, SubscriptionPlan.monthly);
-      expect(controller.history.first.isCancelled, isTrue);
+    test('an unpaid session is rejected', () async {
+      await expectLater(
+        controller.confirmCheckout('cs_test_unknown'),
+        throwsException,
+      );
+      expect(controller.currentPlan, SubscriptionPlan.free);
     });
 
-    test('cancelling keeps access until the end date', () async {
-      await controller.subscribe(SubscriptionPlan.yearly);
-      await controller.cancel();
+    test('upgrading only charges the difference for unused days', () async {
+      addRunning(SubscriptionPlan.monthly, daysLeft: 20);
+      await controller.load();
 
-      expect(controller.currentPlan, SubscriptionPlan.yearly);
-      expect(controller.current!.isCancelled, isTrue);
-      expect(controller.current!.isActive, isTrue);
+      final change = controller.quote(SubscriptionPlan.yearly);
+
+      expect(change.isUpgrade, isTrue);
+      expect(change.credit, 1.99);
+      expect(change.total, 28.00);
+      expect(change.refund, 0);
+
+      await payFor(SubscriptionPlan.yearly);
+      expect(controller.current!.plan, SubscriptionPlan.yearly);
+      expect(controller.current!.amountPaid, 28.00);
+      expect(controller.history.single.plan, SubscriptionPlan.monthly);
     });
 
-    test('expired subscriptions fall back to free', () async {
-      final now = DateTime.now();
-      repository.rows.add(
-        Subscription(
-          id: 99,
-          plan: SubscriptionPlan.monthly,
-          status: 'active',
-          startedAt: now.subtract(const Duration(days: 40)),
-          endsAt: now.subtract(const Duration(days: 10)),
-        ),
+    test('downgrading switches without payment and refunds', () async {
+      addRunning(SubscriptionPlan.yearly, daysLeft: 300);
+      await controller.load();
+
+      final change = controller.quote(SubscriptionPlan.monthly);
+      expect(change.isDowngrade, isTrue);
+      expect(change.credit, 24.65);
+      expect(change.total, 0);
+      expect(change.refund, 21.66);
+
+      final result = await controller.checkout(
+        SubscriptionPlan.monthly,
+        returnUrl,
       );
 
+      expect(result.url, isNull);
+      expect(result.refund, 21.66);
+      expect(controller.currentPlan, SubscriptionPlan.monthly);
+      expect(controller.history.single.refundAmount, 21.66);
+    });
+
+    test('small differences are charged the Stripe minimum', () async {
+      addRunning(SubscriptionPlan.yearly, daysLeft: 34);
+      await controller.load();
+
+      final change = controller.quote(SubscriptionPlan.monthly);
+
+      expect(change.credit, 2.79);
+      expect(change.total, minimumCharge);
+    });
+
+    test('cancelling refunds the unused days and ends access', () async {
+      addRunning(SubscriptionPlan.monthly, daysLeft: 20);
+      await controller.load();
+
+      final refund = await controller.cancel();
+
+      expect(refund, 1.99);
+      expect(controller.currentPlan, SubscriptionPlan.free);
+      expect(controller.history.single.refundAmount, 1.99);
+      expect(controller.history.single.netPaid, 1.00);
+    });
+
+    test('a cancelled plan is never current, even with a clock gap', () async {
+      repository.rows.add(
+        Subscription(
+          id: 70,
+          plan: SubscriptionPlan.yearly,
+          status: 'cancelled',
+          startedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+          endsAt: DateTime.now().add(const Duration(minutes: 1)),
+          amountPaid: 29.99,
+          refundAmount: 29.91,
+        ),
+      );
       await controller.load();
 
       expect(controller.currentPlan, SubscriptionPlan.free);
-      expect(controller.history, hasLength(1));
+      expect(controller.quote(SubscriptionPlan.yearly).total, 29.99);
+    });
+
+    test('free admin grants give no credit', () async {
+      repository.rows.add(
+        Subscription(
+          id: 60,
+          plan: SubscriptionPlan.yearly,
+          status: 'active',
+          startedAt: DateTime.now(),
+          endsAt: DateTime.now().add(const Duration(days: 365)),
+        ),
+      );
+      await controller.load();
+
+      expect(controller.quote(SubscriptionPlan.monthly).credit, 0);
     });
 
     test('knows when the user is an admin', () async {
@@ -136,6 +262,19 @@ void main() {
       repository.admin = true;
       await controller.load();
       expect(controller.isAdmin, isTrue);
+    });
+
+    test('admins cannot subscribe', () async {
+      repository.admin = true;
+      await controller.load();
+
+      final result = await controller.checkout(
+        SubscriptionPlan.monthly,
+        returnUrl,
+      );
+
+      expect(result.url, isNull);
+      expect(repository.sessions, isEmpty);
     });
 
     test('a failed admin check keeps the admin flag', () async {

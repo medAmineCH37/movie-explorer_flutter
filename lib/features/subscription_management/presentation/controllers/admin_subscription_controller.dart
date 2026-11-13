@@ -51,9 +51,11 @@ class AdminSubscriptionController extends ChangeNotifier {
       .where((subscription) => subscription.plan == SubscriptionPlan.yearly)
       .length;
 
-  double get revenue => subscriptions.fold(
-    0,
-    (total, subscription) => total + subscription.plan.price,
+  double get revenue => roundMoney(
+    subscriptions.fold(
+      0,
+      (total, subscription) => total + subscription.netPaid,
+    ),
   );
 
   void setFilter(SubscriptionState? value) {
@@ -89,11 +91,19 @@ class AdminSubscriptionController extends ChangeNotifier {
   Future<void> grant(String userId, SubscriptionPlan plan) =>
       _run(() => _repository.grant(userId, plan));
 
-  Future<void> cancel(Subscription subscription) =>
-      _run(() => _repository.cancel(subscription.id));
-
-  Future<void> endNow(Subscription subscription) =>
-      _run(() => _repository.endNow(subscription.id));
+  Future<double> endSubscription(
+    Subscription subscription, {
+    required bool refund,
+  }) async {
+    var refunded = 0.0;
+    await _run(
+      () async => refunded = await _repository.endSubscription(
+        subscription.id,
+        refund: refund,
+      ),
+    );
+    return refunded;
+  }
 
   Future<void> extend(Subscription subscription, int days) =>
       _run(() => _repository.extend(subscription, days));

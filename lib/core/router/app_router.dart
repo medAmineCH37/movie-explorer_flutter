@@ -102,8 +102,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/subscription',
-        builder: (context, state) =>
-            _withBackFallback(context, const SubscriptionPage()),
+        builder: (context, state) => _withBackFallback(
+          context,
+          SubscriptionPage(
+            sessionId: state.uri.queryParameters['session_id'],
+            checkout: state.uri.queryParameters['checkout'],
+          ),
+        ),
       ),
       GoRoute(
         path: '/admin/subscriptions',

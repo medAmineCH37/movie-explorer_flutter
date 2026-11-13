@@ -20,8 +20,6 @@ class SubscriptionService
     return user.id;
   }
 
-  String _now() => DateTime.now().toUtc().toIso8601String();
-
   @override
   Future<List<Subscription>> getSubscriptions() async {
     final response = await _client
@@ -33,15 +31,48 @@ class SubscriptionService
     return response.map(Subscription.fromMap).toList();
   }
 
-  @override
-  Future<void> subscribe(SubscriptionPlan plan) => grant(_userId, plan);
+  Future<Map<String, dynamic>> _payments(Map<String, dynamic> body) async {
+    try {
+      final response = await _client.functions.invoke(
+        'stripe-subscription',
+        body: body,
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on FunctionException catch (e) {
+      final details = e.details;
+      throw Exception(
+        details is Map && details['error'] != null
+            ? details['error']
+            : 'Payment service unavailable.',
+      );
+    }
+  }
 
   @override
-  Future<void> cancel(int subscriptionId) async {
-    await _client
-        .from('subscriptions')
-        .update({'status': 'cancelled'})
-        .eq('id', subscriptionId);
+  Future<CheckoutResult> checkout(
+    SubscriptionPlan plan,
+    String returnUrl,
+  ) async {
+    final data = await _payments({
+      'action': 'checkout',
+      'plan': plan.value,
+      'returnUrl': returnUrl,
+    });
+    return CheckoutResult(
+      url: data['url'] as String?,
+      refund: (data['refund'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  @override
+  Future<void> confirmCheckout(String sessionId) async {
+    await _payments({'action': 'confirm', 'sessionId': sessionId});
+  }
+
+  @override
+  Future<double> cancelWithRefund() async {
+    final data = await _payments({'action': 'cancel'});
+    return (data['refund'] as num?)?.toDouble() ?? 0;
   }
 
   @override
@@ -94,11 +125,16 @@ class SubscriptionService
   }
 
   @override
-  Future<void> endNow(int subscriptionId) async {
-    await _client
-        .from('subscriptions')
-        .update({'status': 'cancelled', 'ends_at': _now()})
-        .eq('id', subscriptionId);
+  Future<double> endSubscription(
+    int subscriptionId, {
+    required bool refund,
+  }) async {
+    final data = await _payments({
+      'action': 'admin_cancel',
+      'subscriptionId': subscriptionId,
+      'refund': refund,
+    });
+    return (data['refund'] as num?)?.toDouble() ?? 0;
   }
 
   @override

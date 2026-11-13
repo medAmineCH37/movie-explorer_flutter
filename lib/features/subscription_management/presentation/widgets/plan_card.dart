@@ -7,12 +7,14 @@ class PlanCard extends StatelessWidget {
     super.key,
     required this.plan,
     required this.currentPlan,
+    required this.change,
     required this.isBusy,
     required this.onSubscribe,
   });
 
   final SubscriptionPlan plan;
   final SubscriptionPlan currentPlan;
+  final PlanChange change;
   final bool isBusy;
   final VoidCallback onSubscribe;
 
@@ -71,6 +73,16 @@ class PlanCard extends StatelessWidget {
                   ],
                 ),
               ),
+            if (plan.isPaid && !isCurrent && change.credit > 0) ...[
+              const SizedBox(height: 6),
+              Text(
+                change.refund > 0
+                    ? 'Nothing to pay today · ${formatMoney(change.refund)} refunded'
+                    : 'Due today: ${formatMoney(change.total)} '
+                          '(${formatMoney(change.credit)} credit applied)',
+                style: TextStyle(color: colors.secondary),
+              ),
+            ],
             if (plan.isPaid) ...[
               const SizedBox(height: 12),
               SizedBox(
@@ -80,8 +92,10 @@ class PlanCard extends StatelessWidget {
                   child: Text(
                     isCurrent
                         ? 'Current plan'
-                        : currentPlan.isPaid
-                        ? 'Switch to this plan'
+                        : change.isUpgrade
+                        ? 'Upgrade'
+                        : change.isDowngrade
+                        ? 'Downgrade'
                         : 'Subscribe',
                   ),
                 ),

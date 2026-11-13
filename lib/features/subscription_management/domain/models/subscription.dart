@@ -1,14 +1,16 @@
+import 'dart:math';
+
 enum SubscriptionPlan {
   free('free', 'Free', 0, 0, [
     'Browse and search movies',
     'Favorites and watchlist',
   ]),
-  monthly('monthly', 'Premium Monthly', 9.99, 30, [
+  monthly('monthly', 'Premium Monthly', 2.99, 30, [
     'Everything in Free',
     'Unlimited collections',
     'Ad-free experience',
   ]),
-  yearly('yearly', 'Premium Yearly', 99.99, 365, [
+  yearly('yearly', 'Premium Yearly', 29.99, 365, [
     'Everything in Monthly',
     'Two months free',
     'Early access to new features',
@@ -32,8 +34,8 @@ enum SubscriptionPlan {
 
   String get priceLabel => switch (this) {
     SubscriptionPlan.free => 'Free',
-    SubscriptionPlan.monthly => '${price.toStringAsFixed(2)} TND / month',
-    SubscriptionPlan.yearly => '${price.toStringAsFixed(2)} TND / year',
+    SubscriptionPlan.monthly => '${formatMoney(price)} / month',
+    SubscriptionPlan.yearly => '${formatMoney(price)} / year',
   };
 
   static SubscriptionPlan fromValue(Object? value) =>
@@ -77,6 +79,10 @@ class Subscription {
     required this.status,
     required this.startedAt,
     required this.endsAt,
+    this.amountPaid = 0,
+    this.refundAmount = 0,
+    this.cardBrand,
+    this.cardLast4,
     this.userId,
     this.userName,
   });
@@ -91,6 +97,10 @@ class Subscription {
       status: map['status'] as String,
       startedAt: DateTime.parse(map['started_at'] as String).toLocal(),
       endsAt: DateTime.parse(map['ends_at'] as String).toLocal(),
+      amountPaid: (map['amount_paid'] as num?)?.toDouble() ?? 0,
+      refundAmount: (map['refund_amount'] as num?)?.toDouble() ?? 0,
+      cardBrand: map['card_brand'] as String?,
+      cardLast4: map['card_last4'] as String?,
       userId: map['user_id'] as String?,
       userName: name == null || name.isEmpty
           ? (profile?['username'] as String?)
@@ -103,21 +113,87 @@ class Subscription {
   final String status;
   final DateTime startedAt;
   final DateTime endsAt;
+  final double amountPaid;
+  final double refundAmount;
+  final String? cardBrand;
+  final String? cardLast4;
   final String? userId;
   final String? userName;
 
   bool get isCancelled => status == 'cancelled';
 
-  bool get isActive => endsAt.isAfter(DateTime.now());
+  bool get isActive => !isCancelled && endsAt.isAfter(DateTime.now());
 
-  SubscriptionState get state => !isActive
-      ? SubscriptionState.expired
-      : isCancelled
+  SubscriptionState get state => isCancelled
       ? SubscriptionState.cancelled
-      : SubscriptionState.active;
+      : isActive
+      ? SubscriptionState.active
+      : SubscriptionState.expired;
 
   int get daysLeft {
     if (!isActive) return 0;
     return (endsAt.difference(DateTime.now()).inHours / 24).ceil();
   }
+
+  int get unusedDays {
+    if (!isActive) return 0;
+    return min(endsAt.difference(DateTime.now()).inDays, plan.durationDays);
+  }
+
+  int get usedDays => plan.durationDays - unusedDays;
+
+  double get unusedValue {
+    final value = plan.price * unusedDays / plan.durationDays;
+    return roundMoney(max(0, min(value, amountPaid - refundAmount)));
+  }
+
+  double get netPaid => roundMoney(amountPaid - refundAmount);
+
+  PaymentCard? get card => cardBrand == null || cardLast4 == null
+      ? null
+      : PaymentCard(brand: cardBrand!, last4: cardLast4!);
 }
+
+class PaymentCard {
+  const PaymentCard({required this.brand, required this.last4});
+
+  final String brand;
+  final String last4;
+
+  String get label => '$brand •••• $last4';
+}
+
+class PlanChange {
+  const PlanChange({required this.plan, this.from, this.credit = 0});
+
+  factory PlanChange.to(SubscriptionPlan plan, Subscription? current) =>
+      PlanChange(plan: plan, from: current, credit: current?.unusedValue ?? 0);
+
+  final SubscriptionPlan plan;
+  final Subscription? from;
+  final double credit;
+
+  double get total {
+    final value = roundMoney(max(0, plan.price - credit));
+    return value > 0 && value < minimumCharge ? minimumCharge : value;
+  }
+
+  double get refund => roundMoney(max(0, credit - plan.price));
+
+  bool get isUpgrade => from != null && plan.price > from!.plan.price;
+
+  bool get isDowngrade => from != null && plan.price < from!.plan.price;
+}
+
+const minimumCharge = 0.5;
+
+class CheckoutResult {
+  const CheckoutResult({this.url, this.refund = 0});
+
+  final String? url;
+  final double refund;
+}
+
+double roundMoney(double value) => (value * 100).round() / 100;
+
+String formatMoney(double value) => '${value.toStringAsFixed(2)} €';
