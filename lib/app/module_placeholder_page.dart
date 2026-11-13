@@ -1,12 +1,9 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:movie_explorer/core/widgets/cinea_app_bar.dart';
 
 class ModulePlaceholderPage extends StatelessWidget {
-  const ModulePlaceholderPage({
-    required this.moduleId,
-    super.key,
-  });
+  const ModulePlaceholderPage({required this.moduleId, super.key});
 
   final String moduleId;
 
@@ -27,14 +24,7 @@ class ModulePlaceholderPage extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_title),
-        leading: IconButton(
-          onPressed: () => context.go('/'),
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Back to home',
-        ),
-      ),
+      appBar: CineaAppBar(title: _title),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),

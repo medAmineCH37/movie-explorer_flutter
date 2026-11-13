@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../movie_management/data/models/movie.dart';
-import '../../../user_management/data/auth_service.dart';
+import '../../../user_management/data/services/auth_service.dart';
 import '../../domain/models/collection_entry.dart';
 import '../controllers/collection_controller.dart';
 import '../widgets/collection_empty_state.dart';

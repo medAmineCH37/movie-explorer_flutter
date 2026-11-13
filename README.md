@@ -169,3 +169,9 @@ git pull origin main
 ```
 
 If you need to continue working on an existing feature branch, bring the latest `main` changes into it before continuing.
+
+### Supabase Auth email testing (Mailtrap)
+
+For development, configure Supabase Auth to use a Mailtrap **Email Sandbox** SMTP inbox. Supabase sends its confirmation and password-reset messages to that sandbox so the team can inspect the emails without delivering them to real recipients. Configure the SMTP host, port, username, and password in the Supabase Dashboard under **Authentication → SMTP Settings**; keep credentials in the dashboard and never in `env.json`, Flutter code, or Git. Each developer should use the shared development inbox or a team-approved sandbox. Production needs a real transactional email provider and verified sender domain.
+
+Before integrating User Management against an existing Supabase project, apply `supabase/migrations/20261113_user_management_profiles.sql` after reviewing it. It adds the profile fields required by the admin UI and protects role/account privilege fields with RLS and a trigger. It does not configure SMTP.

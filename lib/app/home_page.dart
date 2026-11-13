@@ -7,7 +7,7 @@ import '../features/movie_management/data/services/tmdb_service.dart';
 import '../features/movie_management/presentation/widgets/featured_movie_card.dart';
 import '../features/movie_management/presentation/widgets/movie_row_section.dart';
 import '../features/movie_management/presentation/widgets/movie_state_views.dart';
-import '../features/user_management/data/auth_service.dart';
+import '../features/user_management/data/services/auth_service.dart';
 import '../features/user_management/domain/auth_repository.dart';
 
 class HomePage extends StatefulWidget {
@@ -52,9 +52,9 @@ class _HomePageState extends State<HomePage> {
       icon: Icons.bookmark_border,
     ),
     _ModuleItem(
-      id: 'movie-discovery',
-      title: 'Movie Discovery',
-      description: 'Search, filter and sort movies',
+      id: 'subscription-management',
+      title: 'Subscription Management',
+      description: 'Manage your subscription and billing',
       icon: Icons.search,
     ),
     _ModuleItem(

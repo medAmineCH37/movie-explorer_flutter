@@ -6,7 +6,7 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/repositories/collection_repository_impl.dart';
-import '../../../user_management/data/auth_service.dart';
+import '../../../user_management/data/services/auth_service.dart';
 
 class MovieCollectionActions extends StatefulWidget {
   const MovieCollectionActions({super.key, required this.movieId});

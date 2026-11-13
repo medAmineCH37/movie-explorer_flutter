@@ -1,189 +1,260 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../data/auth_service.dart';
+import '../providers/auth_provider.dart';
 
-class RegisterPage extends StatefulWidget {
+class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _authService = AuthService();
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
 
-  bool _isLoading = false;
-  bool _obscurePassword = true;
+  Color get bgIvory => Theme.of(context).scaffoldBackgroundColor;
+  Color get surfaceWhite => Theme.of(context).colorScheme.surface;
+  Color get textPrimary => Theme.of(context).colorScheme.onSurface;
+  Color get accentGold => Theme.of(context).colorScheme.primary;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
+    _name.dispose();
+    _email.dispose();
+    _password.dispose();
     super.dispose();
-  }
-
-  Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final response = await _authService.signUp(
-        email: _emailController.text,
-        password: _passwordController.text,
-        displayName: _nameController.text,
-      );
-
-      if (!mounted) return;
-
-      if (response.session != null) {
-        context.go('/');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Account created. Check your email to confirm registration.',
-            ),
-          ),
-        );
-        context.go('/login');
-      }
-    } catch (error, stackTrace) {
-      debugPrint('Registration error: $error');
-      debugPrintStack(stackTrace: stackTrace);
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Registration failed: $error'),
-          duration: const Duration(seconds: 8),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final bgIvory = Theme.of(context).scaffoldBackgroundColor;
+    final surfaceWhite = colors.surface;
+    final borderSubtle = colors.outlineVariant;
+    final textPrimary = colors.onSurface;
+    final textMuted = colors.onSurfaceVariant;
+    final accentGold = colors.primary;
+    final state = ref.watch(authProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Create account')),
+      backgroundColor: bgIvory,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: textPrimary,
+            size: 18,
+          ),
+          onPressed: () => context.go('/login'),
+        ),
+      ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(28.0),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 440),
             child: Form(
               key: _formKey,
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.movie_filter_outlined,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.primary,
+                  Center(
+                    child: Column(
+                      children: [
+                        Container(
+                          height: 56,
+                          width: 56,
+                          decoration: BoxDecoration(
+                            color: textPrimary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.person_add_alt_1_outlined,
+                              size: 28,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'REJOINDRE CINEA',
+                          style: TextStyle(
+                            color: accentGold,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Join Movie Explorer',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Create an account to save and review movies.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 40),
                   TextFormField(
-                    controller: _nameController,
-                    textCapitalization: TextCapitalization.words,
+                    controller: _name,
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                     decoration: const InputDecoration(
-                      labelText: 'Display name',
+                      labelText: "Nom d'utilisateur",
                       prefixIcon: Icon(Icons.person_outline),
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Enter your display name.';
-                      }
-                      return null;
-                    },
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? "Entrez votre nom."
+                        : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
-                    controller: _emailController,
+                    controller: _email,
                     keyboardType: TextInputType.emailAddress,
-                    autocorrect: false,
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Enter your email.';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Enter a valid email address.';
-                      }
-                      return null;
-                    },
+                    validator: (v) => v == null || !v.contains('@')
+                        ? 'Entrez un email valide.'
+                        : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
+                    controller: _password,
+                    obscureText: true,
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Mot de passe',
+                      prefixIcon: Icon(Icons.lock_outline),
+                    ),
+                    validator: (v) => v == null || v.length < 6
+                        ? 'Minimum 6 caractères.'
+                        : null,
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: state.isLoading
+                          ? null
+                          : () async {
+                              if (_formKey.currentState!.validate()) {
+                                final router = GoRouter.of(context);
+                                final ok = await ref
+                                    .read(authProvider.notifier)
+                                    .register(
+                                      _email.text.trim(),
+                                      _password.text,
+                                      _name.text.trim(),
+                                    );
+
+                                if (!context.mounted) return;
+
+                                if (ok) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (dialogContext) => AlertDialog(
+                                      title: const Text(
+                                        'Compte créé avec succès !',
+                                      ),
+                                      content: const Text(
+                                        'Un e-mail de confirmation a été envoyé à votre adresse. '
+                                        'Veuillez le valider pour activer votre accès.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(dialogContext);
+                                            router.go('/login');
+                                          },
+                                          child: const Text(
+                                            'Aller à la connexion',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        backgroundColor: textPrimary,
+                        foregroundColor: surfaceWhite,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: state.isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'CRÉER MON COMPTE',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () => context.go('/login'),
+                    child: Text(
+                      "Déjà membre ? Se connecter",
+                      style: TextStyle(
+                        color: accentGold,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (state.error != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6EDDA),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF86651F).withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Text(
+                        state.error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFF96443C),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
                         ),
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Enter a password.';
-                      }
-                      if (value.length < 6) {
-                        return 'Use at least 6 characters.';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: _isLoading ? null : _register,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Create account'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: () => context.go('/login'),
-                    child: const Text('Already have an account? Sign in'),
-                  ),
+                  ],
                 ],
               ),
             ),
