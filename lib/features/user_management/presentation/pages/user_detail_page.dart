@@ -110,71 +110,11 @@ class _UserDetailPageState extends State<UserDetailPage> {
   }
 
   Future<void> _editUser(UserModel user) async {
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController(text: user.name);
-    final emailController = TextEditingController(text: user.email);
     final values = await showDialog<Map<String, String>>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Modifier le compte'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nameController,
-                autofocus: true,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Nom affiché'),
-                validator: (value) {
-                  final name = value?.trim() ?? '';
-                  if (name.length < 2 || name.length > 80) {
-                    return 'Le nom doit contenir entre 2 et 80 caractères.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Adresse e-mail',
-                  helperText: 'Le changement est appliqué immédiatement.',
-                ),
-                validator: (value) {
-                  final email = value?.trim() ?? '';
-                  if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
-                    return 'Saisissez une adresse e-mail valide.';
-                  }
-                  return null;
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (!formKey.currentState!.validate()) return;
-              Navigator.pop(dialogContext, {
-                'displayName': nameController.text.trim(),
-                'email': emailController.text.trim(),
-              });
-            },
-            child: const Text('Enregistrer'),
-          ),
-        ],
-      ),
+      builder: (_) => _EditManagedUserDialog(user: user),
     );
-    nameController.dispose();
-    emailController.dispose();
-    if (values == null) return;
+    if (!mounted || values == null) return;
 
     try {
       await _authService.updateManagedUser(
@@ -518,6 +458,94 @@ class _UserDetailPageState extends State<UserDetailPage> {
               ),
             ),
           ),
+      ],
+    );
+  }
+}
+
+class _EditManagedUserDialog extends StatefulWidget {
+  const _EditManagedUserDialog({required this.user});
+
+  final UserModel user;
+
+  @override
+  State<_EditManagedUserDialog> createState() => _EditManagedUserDialogState();
+}
+
+class _EditManagedUserDialogState extends State<_EditManagedUserDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _emailController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.user.name);
+    _emailController = TextEditingController(text: widget.user.email);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Modifier le compte'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _nameController,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(labelText: 'Nom affiché'),
+              validator: (value) {
+                final name = value?.trim() ?? '';
+                if (name.length < 2 || name.length > 80) {
+                  return 'Le nom doit contenir entre 2 et 80 caractères.';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Adresse e-mail',
+                helperText: 'Le changement est appliqué immédiatement.',
+              ),
+              validator: (value) {
+                final email = value?.trim() ?? '';
+                if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
+                  return 'Saisissez une adresse e-mail valide.';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Annuler'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (!_formKey.currentState!.validate()) return;
+            Navigator.pop(context, {
+              'displayName': _nameController.text.trim(),
+              'email': _emailController.text.trim(),
+            });
+          },
+          child: const Text('Enregistrer'),
+        ),
       ],
     );
   }
