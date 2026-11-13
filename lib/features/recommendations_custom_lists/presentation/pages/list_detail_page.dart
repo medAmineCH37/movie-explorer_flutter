@@ -103,8 +103,9 @@ class _ListDetailPageState extends State<ListDetailPage> {
       for (final (i, m) in list.movies.take(20).indexed) '${i + 1}. ${m.title}',
     ];
     await Clipboard.setData(ClipboardData(text: lines.join('\n')));
-    if (mounted)
+    if (mounted) {
       showRecoSnack(context, 'List copied — paste it anywhere to share');
+    }
   }
 
   Future<void> _addMovies(CustomList list) async {

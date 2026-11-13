@@ -60,8 +60,9 @@ UserSignals buildSignals(
   final seeds = <Seed>[];
   for (final m in byRecent) {
     if (seeds.length >= seedCount) break;
-    if (!seeds.any((s) => s.movieId == m.movieId))
+    if (!seeds.any((s) => s.movieId == m.movieId)) {
       seeds.add(Seed(m.movieId, m.title));
+    }
   }
 
   final genreCount = <int, int>{};
