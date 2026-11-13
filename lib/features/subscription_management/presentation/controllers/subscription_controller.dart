@@ -13,6 +13,7 @@ class SubscriptionController extends ChangeNotifier {
   List<Subscription> subscriptions = [];
   bool isLoading = false;
   bool isBusy = false;
+  bool isAdmin = false;
   String? error;
 
   Subscription? get current {
@@ -40,6 +41,13 @@ class SubscriptionController extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
+
+    try {
+      isAdmin = await _repository.isAdmin();
+    } catch (_) {
+      isAdmin = false;
+    }
+    notifyListeners();
   }
 
   Future<void> subscribe(SubscriptionPlan plan) async {
@@ -54,6 +62,7 @@ class SubscriptionController extends ChangeNotifier {
 
   void clear() {
     subscriptions = [];
+    isAdmin = false;
     error = null;
     notifyListeners();
   }

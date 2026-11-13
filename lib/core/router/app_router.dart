@@ -8,6 +8,7 @@ import '../../features/movie_discovery/presentation/pages/movie_search_page.dart
 import '../../features/user_management/presentation/pages/login_page.dart';
 import '../../features/user_management/presentation/pages/register_page.dart';
 import '../../features/personal_collection/presentation/pages/collection_page.dart';
+import '../../features/subscription_management/presentation/pages/admin_subscriptions_page.dart';
 import '../../features/subscription_management/presentation/pages/subscription_page.dart';
 
 final appRouter = GoRouter(
@@ -26,6 +27,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/subscription',
       builder: (context, state) => const SubscriptionPage(),
+    ),
+    GoRoute(
+      path: '/admin/subscriptions',
+      builder: (context, state) => const AdminSubscriptionsPage(),
     ),
     GoRoute(
       path: '/movie/:movieId',

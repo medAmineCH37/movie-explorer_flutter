@@ -111,6 +111,18 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           icon: const Icon(Icons.arrow_back),
           tooltip: 'Back to home',
         ),
+        actions: [
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) => _controller.isAdmin
+                ? IconButton(
+                    onPressed: () => context.push('/admin/subscriptions'),
+                    icon: const Icon(Icons.admin_panel_settings_outlined),
+                    tooltip: 'Manage subscriptions',
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
       ),
       body: _isAuthenticated ? _content() : _signIn(),
     );

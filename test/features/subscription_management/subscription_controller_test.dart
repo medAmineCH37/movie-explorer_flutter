@@ -8,6 +8,10 @@ class FakeSubscriptionRepository implements SubscriptionRepository {
   final List<Subscription> rows = [];
   int _nextId = 1;
   bool shouldThrow = false;
+  bool admin = false;
+
+  @override
+  Future<bool> isAdmin() async => admin;
 
   @override
   Future<List<Subscription>> getSubscriptions() async {
@@ -119,6 +123,15 @@ void main() {
 
       expect(controller.currentPlan, SubscriptionPlan.free);
       expect(controller.history, hasLength(1));
+    });
+
+    test('knows when the user is an admin', () async {
+      await controller.load();
+      expect(controller.isAdmin, isFalse);
+
+      repository.admin = true;
+      await controller.load();
+      expect(controller.isAdmin, isTrue);
     });
 
     test('stores an error when loading fails', () async {
