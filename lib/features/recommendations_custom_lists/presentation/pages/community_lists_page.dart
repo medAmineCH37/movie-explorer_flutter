@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/custom_list_repository.dart';
+import '../../data/list_changes.dart';
 import '../../domain/models/custom_list.dart';
 import '../widgets/reco_ui.dart';
 import 'my_lists_page.dart';
@@ -26,7 +27,18 @@ class _CommunityListsPageState extends State<CommunityListsPage> {
   @override
   void initState() {
     super.initState();
+    ListChanges.instance.addListener(_onListsChanged);
     if (_repository.currentUserId != null) _load(reset: true);
+  }
+
+  void _onListsChanged() {
+    if (_repository.currentUserId != null) _load(reset: true);
+  }
+
+  @override
+  void dispose() {
+    ListChanges.instance.removeListener(_onListsChanged);
+    super.dispose();
   }
 
   Future<void> _load({bool reset = false}) async {

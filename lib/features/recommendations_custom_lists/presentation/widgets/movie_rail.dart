@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../domain/models/recommended_movie.dart';
 import '../../domain/models/tmdb_candidate.dart';
+import '../../data/list_changes.dart';
 import 'add_to_list_sheet.dart';
 import 'poster_quick_actions.dart';
 import 'reco_ui.dart';
@@ -10,8 +11,12 @@ import 'reco_ui.dart';
 const double _posterWidth = 124;
 const double _posterHeight = 186;
 
-void openMovie(BuildContext context, int movieId) =>
-    context.push('/movie/$movieId');
+/// Opens a movie; on return, recommendations refresh (the user may have
+/// rated it or added it to favorites or a list).
+Future<void> openMovie(BuildContext context, int movieId) async {
+  await context.push('/movie/$movieId');
+  ListChanges.instance.notify();
+}
 
 /// Horizontal row of posters, Netflix style. Long press: add to a list.
 class MovieRail extends StatelessWidget {

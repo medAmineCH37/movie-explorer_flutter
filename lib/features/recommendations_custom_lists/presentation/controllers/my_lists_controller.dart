@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../data/custom_list_repository.dart';
+import '../../data/list_changes.dart';
 import '../../domain/models/custom_list.dart';
 
 enum ListFilter { all, private, public }
@@ -9,7 +10,27 @@ enum ListSort { recent, name, size }
 
 class MyListsController extends ChangeNotifier {
   MyListsController({CustomListRepository? repository})
-    : repository = repository ?? CustomListRepository();
+    : repository = repository ?? CustomListRepository() {
+    ListChanges.instance.addListener(_onListsChanged);
+  }
+
+  bool _disposed = false;
+
+  void _onListsChanged() {
+    if (!loading && repository.currentUserId != null) load();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    ListChanges.instance.removeListener(_onListsChanged);
+    super.dispose();
+  }
 
   final CustomListRepository repository;
 

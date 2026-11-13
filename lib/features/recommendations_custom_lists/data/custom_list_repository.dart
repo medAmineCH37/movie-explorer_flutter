@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/list_rules.dart';
 import '../domain/models/custom_list.dart';
 import '../domain/ranking.dart';
+import 'list_changes.dart';
 import 'reco_tmdb_service.dart';
 
 /// Custom lists in Supabase. Rules are checked here for clear messages and
@@ -63,7 +64,7 @@ class CustomListRepository {
     required String name,
     String description = '',
     bool isPublic = false,
-  }) => _guard(() async {
+  }) => _mutate(() async {
     final mine = await getMyLists();
     _check(ListRules.canCreateList(mine.length));
     _check(ListRules.validateName(name, mine.map((l) => l.name)));
@@ -86,7 +87,7 @@ class CustomListRepository {
     required String name,
     required String description,
     required bool isPublic,
-  }) => _guard(() async {
+  }) => _mutate(() async {
     final mine = await getMyLists();
     _check(
       ListRules.validateName(
@@ -107,7 +108,7 @@ class CustomListRepository {
     if (rows.isEmpty) throw const RecoException(_ownerOnly);
   });
 
-  Future<void> deleteList(int listId) => _guard(() async {
+  Future<void> deleteList(int listId) => _mutate(() async {
     final rows = await _client
         .from('custom_lists')
         .delete()
@@ -116,7 +117,7 @@ class CustomListRepository {
     if (rows.isEmpty) throw const RecoException(_ownerOnly);
   });
 
-  Future<void> addMovie(CustomList list, ListMovie movie) => _guard(() async {
+  Future<void> addMovie(CustomList list, ListMovie movie) => _mutate(() async {
     _check(
       ListRules.canAddMovie(
         movieCount: list.movieCount,
@@ -128,7 +129,7 @@ class CustomListRepository {
         .insert(movie.toInsertJson(list.id));
   });
 
-  Future<void> removeMovie(int listId, int movieId) => _guard(() async {
+  Future<void> removeMovie(int listId, int movieId) => _mutate(() async {
     final rows = await _client
         .from('custom_list_movies')
         .delete()
@@ -173,6 +174,13 @@ class CustomListRepository {
 
   void _check(String? error) {
     if (error != null) throw RecoException(error);
+  }
+
+  /// Runs a write, then tells open screens to refresh.
+  Future<T> _mutate<T>(Future<T> Function() action) async {
+    final result = await _guard(action);
+    ListChanges.instance.notify();
+    return result;
   }
 
   /// Translates database errors into user-facing messages.

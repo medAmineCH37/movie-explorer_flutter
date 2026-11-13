@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/favorites/favorite_ids_store.dart';
 import '../../data/custom_list_repository.dart';
+import '../../data/list_changes.dart';
 import '../../data/recommendation_service.dart';
 import '../../domain/models/custom_list.dart';
 import '../../domain/models/recommended_movie.dart';
@@ -14,11 +18,21 @@ class GenreRow {
 }
 
 class ForYouController extends ChangeNotifier {
+  bool _disposed = false;
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
   ForYouController({
     RecommendationService? service,
     CustomListRepository? lists,
   }) : _lists = lists ?? CustomListRepository(),
-       _service = service ?? RecommendationService(lists: lists);
+       _service = service ?? RecommendationService(lists: lists) {
+    ListChanges.instance.addListener(_scheduleRefresh);
+    FavoriteIdsStore.instance.addListener(_scheduleRefresh);
+  }
 
   final RecommendationService _service;
   final CustomListRepository _lists;
@@ -32,6 +46,30 @@ class ForYouController extends ChangeNotifier {
   List<TmdbCandidate> trending = [];
   List<GenreRow> genreRows = [];
   List<CustomList> myLists = [];
+
+  Timer? _refreshTimer;
+  bool _refreshPending = false;
+
+  /// Silent refresh (no skeleton) shortly after a change, grouped together.
+  void _scheduleRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer(const Duration(milliseconds: 400), () {
+      if (loading) {
+        _refreshPending = true;
+      } else {
+        unawaited(load());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _refreshTimer?.cancel();
+    ListChanges.instance.removeListener(_scheduleRefresh);
+    FavoriteIdsStore.instance.removeListener(_scheduleRefresh);
+    super.dispose();
+  }
 
   bool get signedIn => _lists.currentUserId != null;
   bool get isPersonal =>
@@ -56,6 +94,10 @@ class ForYouController extends ChangeNotifier {
     } finally {
       loading = false;
       notifyListeners();
+    }
+    if (_refreshPending) {
+      _refreshPending = false;
+      unawaited(load());
     }
   }
 

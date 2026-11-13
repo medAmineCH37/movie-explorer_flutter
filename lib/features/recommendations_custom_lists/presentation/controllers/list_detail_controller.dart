@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../data/custom_list_repository.dart';
+import '../../data/list_changes.dart';
 import '../../data/recommendation_service.dart';
 import '../../domain/models/custom_list.dart';
 import '../../domain/models/recommended_movie.dart';
@@ -12,7 +13,28 @@ class ListDetailController extends ChangeNotifier {
     CustomListRepository? repository,
     RecommendationService? service,
   }) : repository = repository ?? CustomListRepository(),
-       _service = service ?? RecommendationService(lists: repository);
+       _service = service ?? RecommendationService(lists: repository) {
+    ListChanges.instance.addListener(_onListsChanged);
+  }
+
+  bool _disposed = false;
+  bool _deleted = false;
+
+  void _onListsChanged() {
+    if (!loading && !_deleted) load();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    ListChanges.instance.removeListener(_onListsChanged);
+    super.dispose();
+  }
 
   final int listId;
   final CustomListRepository repository;
@@ -101,5 +123,8 @@ class ListDetailController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> delete() => repository.deleteList(listId);
+  Future<void> delete() {
+    _deleted = true;
+    return repository.deleteList(listId);
+  }
 }

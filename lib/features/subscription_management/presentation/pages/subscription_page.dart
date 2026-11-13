@@ -318,7 +318,9 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                     const SizedBox(height: 16),
                     Text('History', style: titleStyle),
                     const SizedBox(height: 8),
-                    SubscriptionHistory(subscriptions: _controller.history),
+                    SubscriptionHistory(
+                      subscriptions: _controller.subscriptions,
+                    ),
                   ],
           ),
         );
