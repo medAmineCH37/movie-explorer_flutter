@@ -8,6 +8,7 @@ import '../controllers/list_detail_controller.dart';
 import '../widgets/add_movies_sheet.dart';
 import '../widgets/list_form_sheet.dart';
 import '../widgets/movie_rail.dart';
+import '../widgets/poster_quick_actions.dart';
 import '../widgets/reco_ui.dart';
 
 class ListDetailPage extends StatefulWidget {
@@ -275,7 +276,16 @@ class _ListDetailPageState extends State<ListDetailPage> {
                           onLongPress: c.isOwner
                               ? () => _movieActions(movie)
                               : null,
-                          child: PosterImage(url: movie.posterUrl),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              PosterImage(url: movie.posterUrl),
+                              PosterQuickActions(
+                                movieId: movie.movieId,
+                                compact: true,
+                              ),
+                            ],
+                          ),
                         );
                       },
                     ),

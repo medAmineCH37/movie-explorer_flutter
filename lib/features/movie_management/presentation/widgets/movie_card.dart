@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/movie.dart';
+import '../../../recommendations_custom_lists/presentation/widgets/poster_quick_actions.dart';
 import 'movie_poster_image.dart';
 
 /// Poster card used by the catalogue rows and grids.
@@ -47,6 +48,7 @@ class MovieCard extends StatelessWidget {
                           left: 8,
                           child: _ScoreBadge(score: movie.voteAverage),
                         ),
+                      PosterQuickActions(movieId: movie.id),
                     ],
                   ),
                 ),

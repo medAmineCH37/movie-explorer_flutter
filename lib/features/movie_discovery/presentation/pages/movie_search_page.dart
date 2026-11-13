@@ -1,3 +1,6 @@
+import '../../../../core/favorites/favorite_ids_store.dart';
+import '../../../../core/navigation/app_shell.dart';
+import '../../../recommendations_custom_lists/presentation/widgets/poster_quick_actions.dart';
 
 import 'dart:async';
 
@@ -82,6 +85,7 @@ class _MovieSearchPageState extends State<MovieSearchPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: shellMenuButton(context),
         title: const Text('Discover Movies'),
       ),
       body: SafeArea(
@@ -108,9 +112,7 @@ class _MovieSearchPageState extends State<MovieSearchPage> {
                 ),
               ),
             ),
-            Expanded(
-              child: _buildResults(),
-            ),
+            Expanded(child: _buildResults()),
           ],
         ),
       ),
@@ -156,9 +158,7 @@ class _MovieSearchPageState extends State<MovieSearchPage> {
     }
 
     if (_movies.isEmpty) {
-      return const Center(
-        child: Text('No movies found. Try another title.'),
-      );
+      return const Center(child: Text('No movies found. Try another title.'));
     }
 
     return ListView.separated(
@@ -175,14 +175,30 @@ class _MovieSearchPageState extends State<MovieSearchPage> {
             leading: SizedBox(
               width: 64,
               height: 96,
-              child: movie.posterUrl == null
-                  ? const Icon(Icons.movie_outlined, size: 36)
-                  : CachedNetworkImage(
-                      imageUrl: movie.posterUrl!,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, _, _) =>
-                          const Icon(Icons.movie_outlined, size: 36),
-                    ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  movie.posterUrl == null
+                      ? const Icon(Icons.movie_outlined, size: 36)
+                      : CachedNetworkImage(
+                          imageUrl: movie.posterUrl!,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, _, _) =>
+                              const Icon(Icons.movie_outlined, size: 36),
+                        ),
+                  ListenableBuilder(
+                    listenable: FavoriteIdsStore.instance,
+                    builder: (context, _) =>
+                        FavoriteIdsStore.instance.contains(movie.id)
+                        ? const Positioned(
+                            top: 3,
+                            right: 3,
+                            child: FavoriteHeartBadge(size: 11),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
             ),
             title: Text(
               movie.title,
@@ -211,7 +227,7 @@ class _MovieSearchPageState extends State<MovieSearchPage> {
                 ],
               ),
             ),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: AddToListCircleButton(movieId: movie.id, size: 34),
             onTap: () => context.push('/movie/${movie.id}'),
           ),
         );

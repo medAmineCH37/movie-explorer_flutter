@@ -116,7 +116,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Panneau de modération et d\'administration de la plateforme CINEA',
+                'Panneau de modération et d\'administration de la plateforme CinéHub',
                 style: TextStyle(
                   color: textMuted,
                   fontSize: 13,

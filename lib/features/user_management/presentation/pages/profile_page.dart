@@ -1,3 +1,5 @@
+import '../../../../core/navigation/app_shell.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -40,12 +42,13 @@ class ProfilePage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: bgIvory,
       appBar: AppBar(
+        leading: shellMenuButton(context),
         backgroundColor: surfaceWhite,
         elevation: 0,
         centerTitle: false,
         shape: Border(bottom: BorderSide(color: borderSubtle, width: 1)),
         title: Text(
-          'Mon Profil CINEA',
+          'Mon profil',
           style: TextStyle(
             color: textPrimary,
             fontSize: 16,

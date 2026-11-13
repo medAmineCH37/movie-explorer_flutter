@@ -1,3 +1,5 @@
+import '../../../../core/favorites/favorite_ids_store.dart';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../movie_management/data/models/movie.dart';
@@ -94,11 +96,13 @@ class CollectionController extends ChangeNotifier {
 
   Future<void> addFavorite(int movieId) async {
     await _repository.addFavorite(movieId);
+    FavoriteIdsStore.instance.setFavorite(movieId, true);
     await loadFavorites();
   }
 
   Future<void> removeFavorite(int movieId) async {
     await _repository.removeFavorite(movieId);
+    FavoriteIdsStore.instance.setFavorite(movieId, false);
     await loadFavorites();
   }
 

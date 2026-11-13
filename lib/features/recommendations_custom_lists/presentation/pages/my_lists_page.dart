@@ -1,3 +1,5 @@
+import '../../../../core/navigation/app_shell.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -63,7 +65,10 @@ class _MyListsPageState extends State<MyListsPage> {
   Widget build(BuildContext context) {
     if (_controller.repository.currentUserId == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('My lists')),
+        appBar: AppBar(
+          leading: shellMenuButton(context),
+          title: const Text('My lists'),
+        ),
         body: Center(
           child: FilledButton(
             onPressed: () => context.push('/login'),
@@ -79,6 +84,7 @@ class _MyListsPageState extends State<MyListsPage> {
         final visible = c.visible;
         return Scaffold(
           appBar: AppBar(
+            leading: shellMenuButton(context),
             title: const Text(
               'My lists',
               style: TextStyle(fontWeight: FontWeight.w800),

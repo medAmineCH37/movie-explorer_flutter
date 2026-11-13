@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../movie_management/data/models/movie.dart';
+import '../../../recommendations_custom_lists/presentation/widgets/poster_quick_actions.dart';
 
 class CollectionMovieCard extends StatelessWidget {
   const CollectionMovieCard({
@@ -71,6 +72,7 @@ class CollectionMovieCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                PosterQuickActions(movieId: movie.id, heartOnLeft: true),
               ],
             ),
           ),

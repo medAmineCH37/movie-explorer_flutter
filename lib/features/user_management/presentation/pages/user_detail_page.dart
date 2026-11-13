@@ -70,7 +70,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
         elevation: 0,
         shape: Border(bottom: BorderSide(color: borderSubtle, width: 1)),
         title: Text(
-          'Fiche Membre CINEA',
+          'Fiche Membre CinéHub',
           style: TextStyle(
             color: textPrimary,
             fontSize: 18,
@@ -125,9 +125,8 @@ class _UserDetailPageState extends State<UserDetailPage> {
       if (!mounted) return;
       await _fetchUser();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Compte mis à jour.')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Compte mis à jour.')));
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

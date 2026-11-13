@@ -84,7 +84,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'REJOINDRE CINEA',
+                          'REJOINDRE CINÉHUB',
                           style: TextStyle(
                             color: accentGold,
                             fontSize: 22,

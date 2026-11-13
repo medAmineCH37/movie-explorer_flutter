@@ -1,3 +1,6 @@
+import '../branding.dart';
+import '../navigation/app_shell.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,7 +14,7 @@ class CineaAppBar extends ConsumerStatefulWidget
   final String title;
   final List<Widget> actions;
 
-  const CineaAppBar({super.key, this.title = 'CINEA', this.actions = const []});
+  const CineaAppBar({super.key, this.title = appName, this.actions = const []});
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -204,18 +207,21 @@ class _CineaAppBarState extends ConsumerState<CineaAppBar> {
     final isLoading = authState.isLoading;
 
     return AppBar(
+      leading: shellMenuButton(context),
       backgroundColor: surfaceWhite,
       elevation: 0,
       shape: Border(bottom: BorderSide(color: borderSubtle, width: 1)),
-      title: Text(
-        widget.title,
-        style: TextStyle(
-          color: textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1,
-        ),
-      ),
+      title: widget.title == appName
+          ? const BrandLogo()
+          : Text(
+              widget.title,
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+              ),
+            ),
       actions: [
         ...widget.actions,
         PopupMenuButton<ThemeMode>(
@@ -271,7 +277,7 @@ class _CineaAppBarState extends ConsumerState<CineaAppBar> {
               onPressed: () => context.push('/auth/login'),
               icon: Icon(Icons.login_rounded, size: 16, color: accentGold),
               label: Text(
-                'Connexion',
+                'Sign in',
                 style: TextStyle(
                   color: accentGold,
                   fontWeight: FontWeight.bold,

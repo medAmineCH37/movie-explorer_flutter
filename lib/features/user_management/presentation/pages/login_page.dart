@@ -72,7 +72,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'CINEA',
+                          'CINÉHUB',
                           style: TextStyle(
                             color: accentGold,
                             fontSize: 24,

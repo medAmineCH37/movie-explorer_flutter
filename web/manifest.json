@@ -1,6 +1,6 @@
 {
-    "name": "Movie Explorer",
-    "short_name": "Movie Explorer",
+    "name": "CinéHub",
+    "short_name": "CinéHub",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -39,15 +39,16 @@ void main() {
     );
   });
 
-  testWidgets('Movie Explorer home screen loads', (tester) async {
+  testWidgets('CinéHub home screen loads', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(home: HomePage(tmdbService: fakeTmdbService())),
       ),
     );
 
-    expect(find.text('Movie Explorer'), findsOneWidget);
-    expect(find.text('YOUR NEXT MOVIE NIGHT'), findsOneWidget);
+    // Brand logo: "Ciné" + "Hub".
+    expect(find.text('Ciné'), findsOneWidget);
+    expect(find.text('Hub'), findsOneWidget);
   });
 
   testWidgets('home shows the featured movie and the four catalogue lists', (

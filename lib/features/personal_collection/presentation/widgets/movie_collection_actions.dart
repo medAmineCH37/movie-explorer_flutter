@@ -1,3 +1,5 @@
+import '../../../../core/favorites/favorite_ids_store.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -107,6 +109,7 @@ class _MovieCollectionActionsState extends State<MovieCollectionActions> {
       if (!mounted) return;
 
       setState(() => _isFavorite = !_isFavorite);
+      FavoriteIdsStore.instance.setFavorite(widget.movieId, _isFavorite);
 
       _showMessage(
         _isFavorite ? 'Added to Favorites' : 'Removed from Favorites',

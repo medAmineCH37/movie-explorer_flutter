@@ -6,7 +6,7 @@
 
     <application
         android:name="${applicationName}"
-        android:label="Movie Explorer"
+        android:label="CinéHub"
         android:icon="@mipmap/ic_launcher">
 
         <activity

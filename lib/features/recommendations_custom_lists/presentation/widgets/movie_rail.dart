@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../domain/models/recommended_movie.dart';
 import '../../domain/models/tmdb_candidate.dart';
 import 'add_to_list_sheet.dart';
+import 'poster_quick_actions.dart';
 import 'reco_ui.dart';
 
 const double _posterWidth = 124;
@@ -75,6 +76,7 @@ class MoviePosterCard extends StatelessWidget {
                     bottom: 6,
                     child: MatchBadge(item.match!, compact: true),
                   ),
+                PosterQuickActions(movieId: movie.id, compact: true),
               ],
             ),
             const SizedBox(height: 6),
@@ -145,7 +147,16 @@ class Top10Rail extends StatelessWidget {
                     right: 8,
                     top: 0,
                     bottom: 4,
-                    child: PosterImage(url: movie.posterUrl, width: 110),
+                    child: SizedBox(
+                      width: 110,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          PosterImage(url: movie.posterUrl, width: 110),
+                          PosterQuickActions(movieId: movie.id, compact: true),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),

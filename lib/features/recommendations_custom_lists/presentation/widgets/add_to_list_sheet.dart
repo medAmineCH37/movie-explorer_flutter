@@ -37,6 +37,19 @@ Future<void> showAddToListSheet(
   );
 }
 
+/// Loads [movieId] from TMDB, then opens the add-to-list sheet.
+Future<void> showAddToListSheetForId(BuildContext context, int movieId) async {
+  final tmdb = RecoTmdbService();
+  try {
+    final movie = await tmdb.details(movieId);
+    if (context.mounted) await showAddToListSheet(context, movie);
+  } catch (e) {
+    if (context.mounted) showRecoSnack(context, e.toString(), error: true);
+  } finally {
+    tmdb.dispose();
+  }
+}
+
 /// "Add to list" button for the movie details page (Module 2).
 class AddToListButton extends StatefulWidget {
   const AddToListButton({required this.movieId, super.key});
@@ -52,16 +65,8 @@ class _AddToListButtonState extends State<AddToListButton> {
 
   Future<void> _open() async {
     setState(() => _loading = true);
-    final tmdb = RecoTmdbService();
-    try {
-      final movie = await tmdb.details(widget.movieId);
-      if (mounted) await showAddToListSheet(context, movie);
-    } catch (e) {
-      if (mounted) showRecoSnack(context, e.toString(), error: true);
-    } finally {
-      tmdb.dispose();
-      if (mounted) setState(() => _loading = false);
-    }
+    await showAddToListSheetForId(context, widget.movieId);
+    if (mounted) setState(() => _loading = false);
   }
 
   @override

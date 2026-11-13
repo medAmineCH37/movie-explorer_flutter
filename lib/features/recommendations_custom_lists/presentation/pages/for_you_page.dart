@@ -1,3 +1,5 @@
+import '../../../../core/navigation/app_shell.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -51,6 +53,7 @@ class _ForYouPageState extends State<ForYouPage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
+        leading: shellMenuButton(context),
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         title: const Text(

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/home_page.dart';
 import '../../app/module_placeholder_page.dart';
+import '../navigation/app_shell.dart';
 import '../../features/movie_management/data/models/movie.dart';
 import '../../features/movie_management/data/models/movie_category.dart';
 import '../../features/movie_management/presentation/pages/movie_catalog_page.dart';
@@ -35,10 +36,36 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: authRefresh,
     initialLocation: '/',
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (context, state) =>
-            _withBackFallback(context, const HomePage()),
+      ShellRoute(
+        builder: (context, state, child) =>
+            AppShell(location: state.uri.path, child: child),
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) =>
+                _withBackFallback(context, const HomePage()),
+          ),
+          GoRoute(
+            path: '/search',
+            builder: (context, state) =>
+                _withBackFallback(context, const MovieSearchPage()),
+          ),
+          GoRoute(
+            path: '/for-you',
+            builder: (context, state) =>
+                _withBackFallback(context, const ForYouPage()),
+          ),
+          GoRoute(
+            path: '/lists',
+            builder: (context, state) =>
+                _withBackFallback(context, const MyListsPage()),
+          ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) =>
+                _withBackFallback(context, const ProfilePage()),
+          ),
+        ],
       ),
       GoRoute(
         path: '/login',
@@ -76,16 +103,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             _withBackFallback(context, const MyRatingsPage()),
       ),
       GoRoute(
-        path: '/for-you',
-        builder: (context, state) =>
-            _withBackFallback(context, const ForYouPage()),
-      ),
-      GoRoute(
-        path: '/lists',
-        builder: (context, state) =>
-            _withBackFallback(context, const MyListsPage()),
-      ),
-      GoRoute(
         path: '/lists/community',
         builder: (context, state) =>
             _withBackFallback(context, const CommunityListsPage()),
@@ -114,11 +131,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/admin/subscriptions',
         builder: (context, state) =>
             _withBackFallback(context, const AdminSubscriptionsPage()),
-      ),
-      GoRoute(
-        path: '/profile',
-        builder: (context, state) =>
-            _withBackFallback(context, const ProfilePage()),
       ),
       GoRoute(
         path: '/module/user-management',
@@ -167,11 +179,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               ? const Scaffold(body: Center(child: Text('Invalid movie ID')))
               : _withBackFallback(context, MovieDetailsPage(movieId: id));
         },
-      ),
-      GoRoute(
-        path: '/search',
-        builder: (context, state) =>
-            _withBackFallback(context, const MovieSearchPage()),
       ),
       GoRoute(
         path: '/module/:moduleId',
