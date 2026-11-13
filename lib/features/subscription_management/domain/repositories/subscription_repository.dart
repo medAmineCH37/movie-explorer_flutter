@@ -3,9 +3,11 @@ import '../models/subscription.dart';
 abstract class SubscriptionRepository {
   Future<List<Subscription>> getSubscriptions();
 
-  Future<void> subscribe(SubscriptionPlan plan);
+  Future<CheckoutResult> checkout(SubscriptionPlan plan, String returnUrl);
 
-  Future<void> cancel(int subscriptionId);
+  Future<void> confirmCheckout(String sessionId);
+
+  Future<double> cancelWithRefund();
 
   Future<bool> isAdmin();
 }
@@ -19,9 +21,7 @@ abstract class AdminSubscriptionRepository {
 
   Future<void> grant(String userId, SubscriptionPlan plan);
 
-  Future<void> cancel(int subscriptionId);
-
-  Future<void> endNow(int subscriptionId);
+  Future<double> endSubscription(int subscriptionId, {required bool refund});
 
   Future<void> extend(Subscription subscription, int days);
 }

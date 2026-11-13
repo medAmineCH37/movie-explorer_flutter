@@ -28,6 +28,8 @@ class SubscriptionController extends ChangeNotifier {
   List<Subscription> get history =>
       subscriptions.where((subscription) => subscription != current).toList();
 
+  PlanChange quote(SubscriptionPlan plan) => PlanChange.to(plan, current);
+
   bool _disposed = false;
 
   Future<void> load() async {
@@ -53,14 +55,33 @@ class SubscriptionController extends ChangeNotifier {
     _notify();
   }
 
-  Future<void> subscribe(SubscriptionPlan plan) async {
-    await _run(() => _repository.subscribe(plan));
+  Future<CheckoutResult> checkout(
+    SubscriptionPlan plan,
+    String returnUrl,
+  ) async {
+    if (isAdmin) return const CheckoutResult();
+    isBusy = true;
+    _notify();
+
+    try {
+      final result = await _repository.checkout(plan, returnUrl);
+      if (result.url == null) await load();
+      return result;
+    } finally {
+      isBusy = false;
+      _notify();
+    }
   }
 
-  Future<void> cancel() async {
+  Future<void> confirmCheckout(String sessionId) =>
+      _run(() => _repository.confirmCheckout(sessionId));
+
+  Future<double> cancel() async {
     final subscription = current;
-    if (subscription == null || subscription.isCancelled) return;
-    await _run(() => _repository.cancel(subscription.id));
+    if (subscription == null || subscription.isCancelled) return 0;
+    var refund = 0.0;
+    await _run(() async => refund = await _repository.cancelWithRefund());
+    return refund;
   }
 
   void clear() {

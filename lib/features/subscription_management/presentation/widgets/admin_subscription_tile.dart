@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../domain/models/subscription.dart';
 import 'date_text.dart';
+import 'subscription_history.dart';
 
-enum AdminAction { extend, cancel, endNow }
+enum AdminAction { extend, refund, revoke }
 
 class AdminSubscriptionTile extends StatelessWidget {
   const AdminSubscriptionTile({
@@ -45,49 +46,55 @@ class AdminSubscriptionTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(subscription.plan.label),
+            Text(paymentSummary(subscription)),
             Text(
               '${formatDate(subscription.startedAt)} → '
               '${formatDate(subscription.endsAt)}',
             ),
             Text(
-              state == SubscriptionState.expired
-                  ? state.label
-                  : '${state.label} · ${subscription.daysLeft} days left',
+              state == SubscriptionState.active
+                  ? '${state.label} · ${subscription.daysLeft} days left'
+                  : state.label,
               style: TextStyle(color: stateColor, fontWeight: FontWeight.w600),
             ),
           ],
         ),
         isThreeLine: true,
-        trailing: PopupMenuButton<AdminAction>(
-          enabled: !isBusy,
-          tooltip: 'Manage',
-          onSelected: onAction,
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: AdminAction.extend,
-              child: ListTile(
-                leading: Icon(Icons.more_time),
-                title: Text('Extend 30 days'),
+        trailing: state == SubscriptionState.cancelled
+            ? null
+            : PopupMenuButton<AdminAction>(
+                enabled: !isBusy,
+                tooltip: 'Manage',
+                onSelected: onAction,
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: AdminAction.extend,
+                    child: ListTile(
+                      leading: Icon(Icons.more_time),
+                      title: Text('Extend 30 days'),
+                    ),
+                  ),
+                  if (state == SubscriptionState.active) ...[
+                    PopupMenuItem(
+                      value: AdminAction.refund,
+                      child: ListTile(
+                        leading: const Icon(Icons.currency_exchange),
+                        title: Text(
+                          'Cancel and refund '
+                          '(${formatMoney(subscription.unusedValue)})',
+                        ),
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: AdminAction.revoke,
+                      child: ListTile(
+                        leading: Icon(Icons.block),
+                        title: Text('Revoke access (no refund)'),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ),
-            if (state == SubscriptionState.active)
-              const PopupMenuItem(
-                value: AdminAction.cancel,
-                child: ListTile(
-                  leading: Icon(Icons.cancel_outlined),
-                  title: Text('Cancel at period end'),
-                ),
-              ),
-            if (state != SubscriptionState.expired)
-              const PopupMenuItem(
-                value: AdminAction.endNow,
-                child: ListTile(
-                  leading: Icon(Icons.block),
-                  title: Text('End now'),
-                ),
-              ),
-          ],
-        ),
       ),
     );
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/models/subscription.dart';
+
 class AdminStats extends StatelessWidget {
   const AdminStats({
     super.key,
@@ -30,8 +32,8 @@ class AdminStats extends StatelessWidget {
           icon: Icons.people_outline,
         ),
         _StatCard(
-          label: 'Total revenue',
-          value: '${revenue.toStringAsFixed(2)} TND',
+          label: 'Net revenue',
+          value: formatMoney(revenue),
           icon: Icons.payments_outlined,
         ),
         _StatCard(

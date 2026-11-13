@@ -19,20 +19,43 @@ class FakeAdminRepository implements AdminSubscriptionRepository {
   @override
   Future<bool> isAdmin() async => admin;
 
-  Subscription _copy(Subscription s, {String? status, DateTime? endsAt}) =>
-      Subscription(
-        id: s.id,
-        plan: s.plan,
-        status: status ?? s.status,
-        startedAt: s.startedAt,
-        endsAt: endsAt ?? s.endsAt,
-        userId: s.userId,
-        userName: s.userName,
-      );
+  Subscription _copy(
+    Subscription s, {
+    String? status,
+    DateTime? endsAt,
+    double? refundAmount,
+  }) => Subscription(
+    id: s.id,
+    plan: s.plan,
+    status: status ?? s.status,
+    startedAt: s.startedAt,
+    endsAt: endsAt ?? s.endsAt,
+    amountPaid: s.amountPaid,
+    refundAmount: refundAmount ?? s.refundAmount,
+    userId: s.userId,
+    userName: s.userName,
+  );
 
   void _update(int id, Subscription Function(Subscription) change) {
     final index = rows.indexWhere((row) => row.id == id);
     rows[index] = change(rows[index]);
+  }
+
+  void addPaid(String userId, SubscriptionPlan plan, {double refund = 0}) {
+    final now = DateTime.now().subtract(const Duration(minutes: 1));
+    rows.add(
+      Subscription(
+        id: _nextId++,
+        plan: plan,
+        status: 'active',
+        startedAt: now,
+        endsAt: now.add(Duration(days: plan.durationDays)),
+        amountPaid: plan.price,
+        refundAmount: refund,
+        userId: userId,
+        userName: people.firstWhere((p) => p.id == userId).name,
+      ),
+    );
   }
 
   @override
@@ -66,14 +89,23 @@ class FakeAdminRepository implements AdminSubscriptionRepository {
   }
 
   @override
-  Future<void> cancel(int subscriptionId) async =>
-      _update(subscriptionId, (s) => _copy(s, status: 'cancelled'));
-
-  @override
-  Future<void> endNow(int subscriptionId) async => _update(
-    subscriptionId,
-    (s) => _copy(s, status: 'cancelled', endsAt: DateTime.now()),
-  );
+  Future<double> endSubscription(
+    int subscriptionId, {
+    required bool refund,
+  }) async {
+    final row = rows.firstWhere((r) => r.id == subscriptionId);
+    final amount = refund ? row.unusedValue : 0.0;
+    _update(
+      subscriptionId,
+      (s) => _copy(
+        s,
+        status: 'cancelled',
+        endsAt: DateTime.now(),
+        refundAmount: s.refundAmount + amount,
+      ),
+    );
+    return amount;
+  }
 
   @override
   Future<void> extend(Subscription subscription, int days) async => _update(
@@ -92,8 +124,8 @@ void main() {
   });
 
   test('loads all subscriptions and users', () async {
-    await repository.grant('u1', SubscriptionPlan.monthly);
-    await repository.grant('u2', SubscriptionPlan.yearly);
+    repository.addPaid('u1', SubscriptionPlan.monthly);
+    repository.addPaid('u2', SubscriptionPlan.yearly);
 
     await controller.load();
 
@@ -102,7 +134,16 @@ void main() {
     expect(controller.activeCount, 2);
     expect(controller.monthlyCount, 1);
     expect(controller.yearlyCount, 1);
-    expect(controller.revenue, closeTo(109.98, 0.001));
+    expect(controller.revenue, closeTo(32.98, 0.001));
+  });
+
+  test('revenue subtracts refunds and ignores free grants', () async {
+    repository.addPaid('u1', SubscriptionPlan.yearly, refund: 10);
+    await repository.grant('u2', SubscriptionPlan.monthly);
+
+    await controller.load();
+
+    expect(controller.revenue, closeTo(19.99, 0.001));
   });
 
   test('grants a plan and replaces the active one', () async {
@@ -114,16 +155,33 @@ void main() {
     expect(controller.subscriptions, hasLength(2));
   });
 
-  test('cancel keeps access, end now removes it', () async {
-    await controller.grant('u1', SubscriptionPlan.monthly);
-    final subscription = controller.subscriptions.first;
+  test('cancel and refund gives back the unused days', () async {
+    repository.addPaid('u1', SubscriptionPlan.yearly);
+    await controller.load();
 
-    await controller.cancel(subscription);
+    final refund = await controller.endSubscription(
+      controller.subscriptions.first,
+      refund: true,
+    );
+
+    expect(refund, 29.91);
     expect(controller.subscriptions.first.state, SubscriptionState.cancelled);
-
-    await controller.endNow(controller.subscriptions.first);
-    expect(controller.subscriptions.first.state, SubscriptionState.expired);
+    expect(controller.subscriptions.first.refundAmount, 29.91);
     expect(controller.activeCount, 0);
+  });
+
+  test('revoking ends access without a refund', () async {
+    repository.addPaid('u1', SubscriptionPlan.monthly);
+    await controller.load();
+
+    final refund = await controller.endSubscription(
+      controller.subscriptions.first,
+      refund: false,
+    );
+
+    expect(refund, 0);
+    expect(controller.subscriptions.first.state, SubscriptionState.cancelled);
+    expect(controller.revenue, 2.99);
   });
 
   test('extends a subscription', () async {
@@ -138,11 +196,12 @@ void main() {
   test('filters by state and searches by user', () async {
     await controller.grant('u1', SubscriptionPlan.monthly);
     await controller.grant('u2', SubscriptionPlan.yearly);
-    await controller.endNow(
+    await controller.endSubscription(
       controller.subscriptions.firstWhere((s) => s.userId == 'u2'),
+      refund: false,
     );
 
-    controller.setFilter(SubscriptionState.expired);
+    controller.setFilter(SubscriptionState.cancelled);
     expect(controller.visible.single.userName, 'Amine');
 
     controller.setFilter(null);
@@ -179,30 +238,50 @@ void main() {
     });
 
     testWidgets('shows stats and subscriptions', (tester) async {
-      await repository.grant('u1', SubscriptionPlan.monthly);
-      await repository.grant('u2', SubscriptionPlan.yearly);
+      repository.addPaid('u1', SubscriptionPlan.monthly);
+      repository.addPaid('u2', SubscriptionPlan.yearly);
 
       await pumpPage(tester);
 
       expect(find.text('Active subscribers'), findsOneWidget);
-      expect(find.text('109.98 TND'), findsOneWidget);
+      expect(find.text('32.98 €'), findsOneWidget);
       expect(find.text('Olfa'), findsOneWidget);
       expect(find.text('Amine'), findsOneWidget);
     });
 
-    testWidgets('ends a subscription from the menu', (tester) async {
-      await repository.grant('u1', SubscriptionPlan.monthly);
+    testWidgets('revokes a subscription from the menu', (tester) async {
+      repository.addPaid('u1', SubscriptionPlan.monthly);
 
       await pumpPage(tester);
       await tester.tap(find.byTooltip('Manage'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('End now').last);
+      await tester.tap(find.text('Revoke access (no refund)'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'End now'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Revoke'));
       await tester.pumpAndSettle();
 
       expect(repository.rows.single.isActive, isFalse);
-      expect(find.text('Expired'), findsWidgets);
+      expect(repository.rows.single.refundAmount, 0);
+      expect(find.text('Access revoked.'), findsOneWidget);
+    });
+
+    testWidgets('cancels with a refund from the menu', (tester) async {
+      repository.addPaid('u1', SubscriptionPlan.yearly);
+
+      await pumpPage(tester);
+      await tester.tap(find.byTooltip('Manage'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel and refund (29.91 €)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Cancel and refund'));
+      await tester.pumpAndSettle();
+
+      expect(repository.rows.single.isActive, isFalse);
+      expect(repository.rows.single.refundAmount, 29.91);
+      expect(
+        find.text('Subscription cancelled. 29.91 € refunded.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('grants a plan from the dialog', (tester) async {

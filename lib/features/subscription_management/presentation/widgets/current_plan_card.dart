@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/models/subscription.dart';
 import 'date_text.dart';
+import 'subscription_history.dart';
 
 class CurrentPlanCard extends StatelessWidget {
   const CurrentPlanCard({
@@ -78,6 +79,11 @@ class CurrentPlanCard extends StatelessWidget {
                   _Info(label: 'Ends', value: formatDate(current.endsAt)),
                   _Info(label: 'Days left', value: '${current.daysLeft}'),
                 ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                paymentSummary(current),
+                style: TextStyle(color: colors.onSurfaceVariant),
               ),
               if (!current.isCancelled) ...[
                 const SizedBox(height: 16),

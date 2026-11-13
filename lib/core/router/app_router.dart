@@ -26,7 +26,10 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/subscription',
-      builder: (context, state) => const SubscriptionPage(),
+      builder: (context, state) => SubscriptionPage(
+        sessionId: state.uri.queryParameters['session_id'],
+        checkout: state.uri.queryParameters['checkout'],
+      ),
     ),
     GoRoute(
       path: '/admin/subscriptions',

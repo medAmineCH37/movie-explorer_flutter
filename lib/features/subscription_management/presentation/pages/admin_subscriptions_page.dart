@@ -49,55 +49,80 @@ class _AdminSubscriptionsPageState extends State<AdminSubscriptionsPage> {
     super.dispose();
   }
 
+  void _show(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Future<void> _perform(Future<void> Function() action, String message) async {
-    final messenger = ScaffoldMessenger.of(context);
     try {
       await action();
-      messenger.showSnackBar(SnackBar(content: Text(message)));
-    } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Action failed. Please try again.')),
-      );
+      if (mounted) _show(message);
+    } catch (e) {
+      if (mounted) _show(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
+  Future<bool> _confirm(String title, String content, String action) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Keep'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(action),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
+  }
+
   Future<void> _onAction(Subscription subscription, AdminAction action) async {
+    final name = subscription.userName ?? 'This user';
+
     switch (action) {
       case AdminAction.extend:
         await _perform(
           () => _controller.extend(subscription, 30),
           'Subscription extended by 30 days.',
         );
-      case AdminAction.cancel:
-        await _perform(
-          () => _controller.cancel(subscription),
-          'Subscription will end on its end date.',
+      case AdminAction.refund:
+        final refund = subscription.unusedValue;
+        final ok = await _confirm(
+          'Cancel and refund?',
+          refund > 0
+              ? '$name will lose Premium access now and get '
+                    '${formatMoney(refund)} back for '
+                    '${subscription.unusedDays} unused days.'
+              : '$name will lose Premium access now. '
+                    'Nothing was paid, so there is nothing to refund.',
+          'Cancel and refund',
         );
-      case AdminAction.endNow:
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('End subscription now?'),
-            content: Text(
-              '${subscription.userName ?? 'This user'} will lose Premium '
-              'access immediately.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Keep'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('End now'),
-              ),
-            ],
-          ),
-        );
-        if (confirmed != true) return;
+        if (!ok) return;
         await _perform(
-          () => _controller.endNow(subscription),
-          'Subscription ended.',
+          () => _controller.endSubscription(subscription, refund: true),
+          refund > 0
+              ? 'Subscription cancelled. ${formatMoney(refund)} refunded.'
+              : 'Subscription cancelled.',
+        );
+      case AdminAction.revoke:
+        final ok = await _confirm(
+          'Revoke access?',
+          '$name will lose Premium access immediately and will not be '
+              'refunded. Use this for abuse or fraud.',
+          'Revoke',
+        );
+        if (!ok) return;
+        await _perform(
+          () => _controller.endSubscription(subscription, refund: false),
+          'Access revoked.',
         );
     }
   }

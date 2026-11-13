@@ -3,6 +3,18 @@ import 'package:flutter/material.dart';
 import '../../domain/models/subscription.dart';
 import 'date_text.dart';
 
+String paymentSummary(Subscription subscription) {
+  final parts = [
+    subscription.amountPaid > 0
+        ? 'Paid ${formatMoney(subscription.amountPaid)}'
+        : 'No charge',
+    if (subscription.refundAmount > 0)
+      'Refunded ${formatMoney(subscription.refundAmount)}',
+    ?subscription.card?.label,
+  ];
+  return parts.join(' · ');
+}
+
 class SubscriptionHistory extends StatelessWidget {
   const SubscriptionHistory({super.key, required this.subscriptions});
 
@@ -26,8 +38,10 @@ class SubscriptionHistory extends StatelessWidget {
               title: Text(subscription.plan.label),
               subtitle: Text(
                 '${formatDate(subscription.startedAt)} → '
-                '${formatDate(subscription.endsAt)}',
+                '${formatDate(subscription.endsAt)}\n'
+                '${paymentSummary(subscription)}',
               ),
+              isThreeLine: true,
               trailing: Text(
                 subscription.isCancelled ? 'Cancelled' : 'Expired',
               ),

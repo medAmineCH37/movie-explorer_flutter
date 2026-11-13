@@ -3,17 +3,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../user_management/data/auth_service.dart';
 import '../../domain/models/subscription.dart';
 import '../controllers/subscription_controller.dart';
 import '../widgets/current_plan_card.dart';
-import '../widgets/payment_dialog.dart';
 import '../widgets/plan_card.dart';
+import '../widgets/price_breakdown.dart';
 import '../widgets/subscription_history.dart';
 
 class SubscriptionPage extends StatefulWidget {
-  const SubscriptionPage({super.key});
+  const SubscriptionPage({super.key, this.sessionId, this.checkout});
+
+  final String? sessionId;
+  final String? checkout;
 
   @override
   State<SubscriptionPage> createState() => _SubscriptionPageState();
@@ -29,7 +33,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
   @override
   void initState() {
     super.initState();
-    if (_isAuthenticated) _controller.load();
+    if (_isAuthenticated) _start();
     _authSubscription = _authService.authStateChanges.listen((data) {
       if (!mounted) return;
       if (data.event == AuthChangeEvent.signedIn) {
@@ -49,38 +53,141 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
     super.dispose();
   }
 
-  Future<void> _subscribe(SubscriptionPlan plan) async {
-    final lastDigits = await PaymentDialog.show(context, plan);
-    if (lastDigits == null || !mounted) return;
+  Future<void> _start() async {
+    final sessionId = widget.sessionId;
+    final cancelled = widget.checkout == 'cancelled';
 
-    final messenger = ScaffoldMessenger.of(context);
+    if (sessionId == null && !cancelled) {
+      await _controller.load();
+      return;
+    }
+
+    if (cancelled) {
+      await _controller.load();
+      _show('Payment cancelled. You were not charged.');
+      return;
+    }
+
     try {
-      await _controller.subscribe(plan);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'Payment accepted (card •••• $lastDigits). '
-            'You are now on ${plan.label}.',
+      await _controller.confirmCheckout(sessionId!);
+      final current = _controller.current;
+      _show(
+        current == null
+            ? 'Payment confirmed.'
+            : 'Payment confirmed: ${formatMoney(current.amountPaid)}'
+                  '${current.card == null ? '' : ' with ${current.card!.label}'}. '
+                  'You are now on ${current.plan.label}.',
+      );
+    } catch (e) {
+      await _controller.load();
+      _show(_message(e));
+    }
+  }
+
+  void _show(String message) {
+    if (!mounted) return;
+    if (widget.sessionId != null || widget.checkout != null) {
+      context.go('/subscription');
+    }
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _message(Object error) =>
+      error.toString().replaceFirst('Exception: ', '');
+
+  String get _returnUrl => '${Uri.base.origin}${Uri.base.path}#/subscription';
+
+  Future<void> _subscribe(SubscriptionPlan plan) async {
+    final change = _controller.quote(plan);
+    final needsPayment = change.total > 0;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          change.from == null
+              ? 'Subscribe to ${plan.label}'
+              : 'Switch to ${plan.label}?',
+        ),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              PriceBreakdown(change: change),
+              const SizedBox(height: 16),
+              if (needsPayment)
+                const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.lock_outline, size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'You will be redirected to Stripe to pay securely.',
+                      ),
+                    ),
+                  ],
+                ),
+            ],
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Not now'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            icon: Icon(needsPayment ? Icons.credit_card : Icons.swap_horiz),
+            label: Text(
+              needsPayment
+                  ? 'Pay ${formatMoney(change.total)} with Stripe'
+                  : 'Confirm switch',
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final result = await _controller.checkout(plan, _returnUrl);
+      final url = result.url;
+      if (url != null) {
+        await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+        return;
+      }
+      _show(
+        result.refund > 0
+            ? 'You are now on ${plan.label}. '
+                  '${formatMoney(result.refund)} refunded to your card.'
+            : 'You are now on ${plan.label}.',
       );
-    } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Could not subscribe. Please try again.')),
-      );
+    } catch (e) {
+      _show(_message(e));
     }
   }
 
   Future<void> _cancel() async {
     final current = _controller.current;
     if (current == null) return;
+    final refund = current.unusedValue;
+    final refundText = refund > 0
+        ? '${formatMoney(refund)} for the ${current.unusedDays} unused days '
+              'will be refunded to your card. '
+        : '';
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Cancel subscription?'),
-        content: const Text(
-          'You will keep Premium access until the end of the current period.',
+        content: Text(
+          'You used ${current.usedDays} of ${current.plan.durationDays} days. '
+          '${refundText}Your Premium access ends now.',
         ),
         actions: [
           TextButton(
@@ -89,7 +196,11 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Cancel subscription'),
+            child: Text(
+              refund > 0
+                  ? 'Cancel and refund ${formatMoney(refund)}'
+                  : 'Cancel subscription',
+            ),
           ),
         ],
       ),
@@ -97,16 +208,16 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
 
     if (confirmed != true || !mounted) return;
 
-    final messenger = ScaffoldMessenger.of(context);
     try {
-      await _controller.cancel();
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Subscription cancelled.')),
+      final refunded = await _controller.cancel();
+      _show(
+        refunded > 0
+            ? 'Subscription cancelled. ${formatMoney(refunded)} refunded '
+                  'to your card.'
+            : 'Subscription cancelled.',
       );
-    } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Could not cancel. Please try again.')),
-      );
+    } catch (e) {
+      _show(_message(e));
     }
   }
 
@@ -177,37 +288,40 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           onRefresh: _controller.load,
           child: ListView(
             padding: const EdgeInsets.all(16),
-            children: [
-              if (_controller.isAdmin) ...[
-                FilledButton.tonalIcon(
-                  onPressed: () => context.push('/admin/subscriptions'),
-                  icon: const Icon(Icons.admin_panel_settings_outlined),
-                  label: const Text('Manage all subscriptions'),
-                ),
-                const SizedBox(height: 16),
-              ],
-              CurrentPlanCard(
-                subscription: _controller.current,
-                isBusy: _controller.isBusy,
-                onCancel: _cancel,
-              ),
-              const SizedBox(height: 24),
-              Text('Plans', style: titleStyle),
-              const SizedBox(height: 8),
-              for (final plan in SubscriptionPlan.values) ...[
-                PlanCard(
-                  plan: plan,
-                  currentPlan: _controller.currentPlan,
-                  isBusy: _controller.isBusy,
-                  onSubscribe: () => _subscribe(plan),
-                ),
-                const SizedBox(height: 8),
-              ],
-              const SizedBox(height: 16),
-              Text('History', style: titleStyle),
-              const SizedBox(height: 8),
-              SubscriptionHistory(subscriptions: _controller.history),
-            ],
+            children: _controller.isAdmin
+                ? [
+                    const _AdminAccessCard(),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => context.push('/admin/subscriptions'),
+                      icon: const Icon(Icons.admin_panel_settings_outlined),
+                      label: const Text('Manage all subscriptions'),
+                    ),
+                  ]
+                : [
+                    CurrentPlanCard(
+                      subscription: _controller.current,
+                      isBusy: _controller.isBusy,
+                      onCancel: _cancel,
+                    ),
+                    const SizedBox(height: 24),
+                    Text('Plans', style: titleStyle),
+                    const SizedBox(height: 8),
+                    for (final plan in SubscriptionPlan.values) ...[
+                      PlanCard(
+                        plan: plan,
+                        currentPlan: _controller.currentPlan,
+                        change: _controller.quote(plan),
+                        isBusy: _controller.isBusy,
+                        onSubscribe: () => _subscribe(plan),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    const SizedBox(height: 16),
+                    Text('History', style: titleStyle),
+                    const SizedBox(height: 8),
+                    SubscriptionHistory(subscriptions: _controller.history),
+                  ],
           ),
         );
       },
@@ -239,6 +353,44 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                 '/login?redirect=${Uri.encodeComponent('/subscription')}',
               ),
               child: const Text('Sign in'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminAccessCard extends StatelessWidget {
+  const _AdminAccessCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            const Icon(Icons.verified_user, color: Color(0xFFFFC857), size: 40),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Admin account',
+                    style: textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'You have full Premium access. No subscription needed.',
+                  ),
+                ],
+              ),
             ),
           ],
         ),
