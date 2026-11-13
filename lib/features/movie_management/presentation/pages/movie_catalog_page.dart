@@ -60,7 +60,7 @@ class _MovieCatalogPageState extends State<MovieCatalogPage> {
           leading: const ShellLeading(),
           leadingWidth: shellLeadingWidth(context),
           title: const Text(
-            'Movie catalogue',
+            'Movie catalog',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           bottom: TabBar(

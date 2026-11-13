@@ -25,7 +25,7 @@ The application is being developed collaboratively in separate feature modules. 
   - Refresh collection data when navigating back from movie details.
 
 - **Movie Management**
-  - Movie catalogue stored in Supabase (`movies`, `genres`, `movie_genres`, `movie_credits`), seeded with 100 movies from TMDB.
+  - Movie catalog stored in Supabase (`movies`, `genres`, `movie_genres`, `movie_credits`), seeded with 100 movies from TMDB.
   - Add, edit and delete movies (any signed-in user): title, dates, runtime, language, status, rating, genres, synopsis, poster/backdrop, trailer, directors and cast.
   - Popular, top-rated, now-playing and upcoming lists, with a featured movie on the home screen.
   - Catalogue screen with one tab per list and infinite scrolling.
@@ -50,7 +50,7 @@ The application is being developed collaboratively in separate feature modules. 
 ## Technology Stack
 
 - **Frontend:** Flutter and Dart
-- **Movie catalogue:** Supabase (sample data from TMDB)
+- **Movie catalog:** Supabase (sample data from TMDB)
 - **Backend services and database:** Supabase
 - **Navigation:** GoRouter
 - **State management:** Riverpod

@@ -1,4 +1,4 @@
--- Movie catalogue stored in Supabase (replaces runtime calls to the TMDB API).
+-- Movie catalog stored in Supabase (replaces runtime calls to the TMDB API).
 --
 -- * genres          fixed list (TMDB genre ids and names), read-only
 -- * movies          one row per movie; seeded movies keep their TMDB id so

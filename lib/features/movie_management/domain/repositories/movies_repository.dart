@@ -17,7 +17,7 @@ class MovieException implements Exception {
   String toString() => message;
 }
 
-/// Movie catalogue stored in Supabase (Movie Management and Discovery).
+/// Movie catalog stored in Supabase (Movie Management and Discovery).
 abstract class MoviesRepository {
   /// Signed-in user id; any signed-in user may add, edit and delete movies.
   String? get currentUserId;
