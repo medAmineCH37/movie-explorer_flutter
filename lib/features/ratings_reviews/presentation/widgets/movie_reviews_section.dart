@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../movie_management/data/models/movie.dart';
 import '../../domain/repositories/reviews_repository.dart';
 import '../controllers/movie_reviews_controller.dart';
+import 'ai_review_summary_card.dart';
 import 'rating_summary_card.dart';
 import 'review_actions.dart';
 import 'review_card.dart';
@@ -162,6 +163,12 @@ class _MovieReviewsSectionState extends State<MovieReviewsSection> {
             RatingSummaryCard(summary: c.summary),
             const SizedBox(height: 12),
             c.isSignedIn ? _myRatingCard(theme) : _signInCard(theme),
+            const SizedBox(height: 12),
+            AiReviewSummaryCard(
+              repository: c.repository,
+              movieId: _movie.id,
+              reviewCount: c.reviewCount,
+            ),
             if (h.mine != null) ...[
               const SizedBox(height: 16),
               actions.card(context, h.mine!, badge: ReviewBadge.mine),

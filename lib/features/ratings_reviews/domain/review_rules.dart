@@ -18,6 +18,13 @@ abstract final class ReviewRules {
 
   static const int pageSize = 10;
 
+  /// Reviews needed before an AI summary can be generated.
+  static const int minReviewsForSummary = 2;
+
+  static const int minAiKeywordsLength = 2;
+  static const int maxAiKeywordsLength = 500;
+  static const int maxAiDraftLength = 900;
+
   static const Map<int, String> scoreLabels = {
     1: 'Poor',
     2: 'Average',
@@ -48,6 +55,17 @@ abstract final class ReviewRules {
     }
     if (length > maxReportReasonLength) {
       return 'The reason cannot exceed $maxReportReasonLength characters.';
+    }
+    return null;
+  }
+
+  static String? validateAiKeywords(String keywords) {
+    final length = keywords.trim().length;
+    if (length < minAiKeywordsLength) {
+      return 'Write a few keywords first (e.g. "stunning visuals, slow ending").';
+    }
+    if (length > maxAiKeywordsLength) {
+      return 'Keep your keywords under $maxAiKeywordsLength characters.';
     }
     return null;
   }

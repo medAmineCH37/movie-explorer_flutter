@@ -7,6 +7,7 @@ import '../../../movie_management/presentation/widgets/movie_poster_image.dart';
 import '../../domain/models/review_sort.dart';
 import '../../domain/repositories/reviews_repository.dart';
 import '../controllers/all_reviews_controller.dart';
+import '../widgets/ai_review_summary_card.dart';
 import '../widgets/rating_summary_card.dart';
 import '../widgets/review_actions.dart';
 import '../../../../core/navigation/app_shell.dart';
@@ -116,6 +117,12 @@ class _AllReviewsPageState extends State<AllReviewsPage> {
                 const SizedBox(height: 16),
                 RatingSummaryCard(summary: c.summary),
                 const SizedBox(height: 12),
+                AiReviewSummaryCard(
+                  repository: c.repository,
+                  movieId: widget.movieId,
+                  reviewCount: c.summary.reviewCount,
+                ),
+                const SizedBox(height: 16),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(

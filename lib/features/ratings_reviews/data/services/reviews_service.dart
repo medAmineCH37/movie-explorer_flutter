@@ -11,6 +11,8 @@ class ReviewsService {
 
   final SupabaseClient _client;
 
+  static const String aiFunctionName = 'review-ai';
+
   String? get currentUserId => _client.auth.currentUser?.id;
 
   Future<bool> isAdmin() async {
@@ -132,5 +134,11 @@ class ReviewsService {
       'reporter_user_id': userId,
       'reason': reason,
     });
+  }
+
+  /// Calls the `review-ai` Edge Function, which holds the Gemini key.
+  Future<Map<String, dynamic>> invokeAi(Map<String, dynamic> body) async {
+    final response = await _client.functions.invoke(aiFunctionName, body: body);
+    return Map<String, dynamic>.from(response.data as Map);
   }
 }

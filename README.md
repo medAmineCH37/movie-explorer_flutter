@@ -34,10 +34,11 @@ The application is being developed collaboratively in separate feature modules. 
   - Search by title, filter by genres, release years, minimum rating and language, sort by popularity, rating, date or title.
   - Edit or delete movies straight from the results, and add new ones.
 - **Ratings & Reviews**
-  - 1–5 star ratings (Mauvais to Chef-d'œuvre) with a community average, vote count and distribution.
+  - 1–5 star ratings (Poor to Masterpiece) with a community average, vote count and distribution.
   - One review per user and movie, with a spoiler flag, likes, reports and an edited indicator.
   - Full review list with four sorts and 10 reviews per page.
   - My ratings & reviews screen with personal statistics.
+  - AI review drafting ("Help me write it") and AI review summaries (Gemini, through the `review-ai` Supabase Edge Function).
 - **Recommendations & Custom Lists** (Module 6)
   - "For You" page: hero carousel, personal picks with % match, Top 10, genre rows.
   - Custom lists: 2–50 character name unique per user (case-insensitive), 20 lists and 100 movies max, no duplicates, private or public, owner-only edits.
@@ -135,6 +136,19 @@ Then run the migrations in `supabase/migrations/` in date order. `20261111_ratin
 ```bash
 dart run tool/generate_movie_seed.dart
 ```
+
+### 4b. Deploy the AI review assistant (optional)
+
+AI review drafts and AI review summaries run in the `review-ai` Supabase Edge Function. The Gemini key stays on the server and never ships in the app.
+
+```bash
+supabase secrets set GEMINI_API_KEY=your-gemini-key
+supabase functions deploy review-ai --no-verify-jwt
+```
+
+Run `supabase/migrations/20261114_restore_review_ai.sql` to (re)create the `review_summaries` cache table.
+
+`--no-verify-jwt` is required because the app's publishable key is not a JWT. The function checks the user itself for drafts, and summaries are public. `GEMINI_MODELS` (comma-separated) optionally overrides the model fallback chain. Without the function, everything else in Ratings & Reviews still works, and the AI buttons show an "unavailable" message.
 
 ### 5. Run the application
 

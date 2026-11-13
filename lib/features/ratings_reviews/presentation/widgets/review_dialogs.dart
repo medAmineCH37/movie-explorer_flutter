@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/repositories/reviews_repository.dart';
-import '../../domain/review_rules.dart';
 
 /// Confirmation for destructive actions. Returns `true` when confirmed.
 Future<bool> confirmDestructive(

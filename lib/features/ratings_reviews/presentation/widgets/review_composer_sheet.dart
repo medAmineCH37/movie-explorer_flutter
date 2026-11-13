@@ -5,7 +5,7 @@ import '../../domain/repositories/reviews_repository.dart';
 import '../../domain/review_rules.dart';
 import 'star_rating.dart';
 
-/// Bottom sheet to write or edit a review.
+/// Bottom sheet to write or edit a review, with optional AI drafting.
 ///
 /// Returns the saved [Review], or `null` when dismissed.
 Future<Review?> showReviewComposer(
@@ -57,9 +57,13 @@ class ReviewComposer extends StatefulWidget {
 
 class _ReviewComposerState extends State<ReviewComposer> {
   late final TextEditingController _text;
+  final TextEditingController _keywords = TextEditingController();
   late bool _spoiler;
   bool _saving = false;
+  bool _drafting = false;
+  bool _showAssistant = false;
   String? _error;
+  String? _aiError;
 
   bool get _isEdit => widget.existing != null;
 
@@ -68,6 +72,7 @@ class _ReviewComposerState extends State<ReviewComposer> {
     super.initState();
     _text = TextEditingController(text: widget.existing?.content ?? '')
       ..addListener(_refresh);
+    _keywords.addListener(_refresh);
     _spoiler = widget.existing?.spoiler ?? false;
   }
 
@@ -76,6 +81,7 @@ class _ReviewComposerState extends State<ReviewComposer> {
   @override
   void dispose() {
     _text.dispose();
+    _keywords.dispose();
     super.dispose();
   }
 
@@ -111,12 +117,69 @@ class _ReviewComposerState extends State<ReviewComposer> {
     }
   }
 
+  Future<void> _draft() async {
+    final error = ReviewRules.validateAiKeywords(_keywords.text);
+    if (error != null) {
+      setState(() => _aiError = error);
+      return;
+    }
+    if (_text.text.trim().isNotEmpty) {
+      final replace = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Replace your text?'),
+          content: const Text(
+            'The AI draft will replace what you have written so far.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Replace'),
+            ),
+          ],
+        ),
+      );
+      if (replace != true) return;
+    }
+
+    setState(() {
+      _drafting = true;
+      _aiError = null;
+    });
+    try {
+      final draft = await widget.repository.draftReview(
+        movieId: widget.movieId,
+        movieTitle: widget.movieTitle,
+        movieYear: widget.movieYear,
+        keywords: _keywords.text,
+      );
+      if (!mounted) return;
+      _text.value = TextEditingValue(
+        text: draft,
+        selection: TextSelection.collapsed(offset: draft.length),
+      );
+      setState(() => _showAssistant = false);
+    } on ReviewException catch (e) {
+      if (mounted) setState(() => _aiError = e.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _aiError = 'The AI assistant is unavailable right now.');
+      }
+    } finally {
+      if (mounted) setState(() => _drafting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final length = _text.text.trim().length;
     final valid = ReviewRules.validateContent(_text.text) == null;
-    final busy = _saving;
+    final busy = _saving || _drafting;
 
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
@@ -177,6 +240,7 @@ class _ReviewComposerState extends State<ReviewComposer> {
               title: const Text('Contains spoilers'),
               subtitle: const Text('Other viewers must tap to reveal it.'),
             ),
+            _assistant(theme, busy),
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: valid && !busy ? _save : null,
@@ -192,6 +256,78 @@ class _ReviewComposerState extends State<ReviewComposer> {
                   : Icon(_isEdit ? Icons.check : Icons.send_outlined),
               label: Text(_isEdit ? 'Save changes' : 'Publish review'),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _assistant(ThemeData theme, bool busy) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 200),
+        alignment: Alignment.topCenter,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ListTile(
+              leading: Icon(
+                Icons.auto_awesome,
+                color: theme.colorScheme.primary,
+              ),
+              title: const Text('Help me write it'),
+              subtitle: const Text(
+                'Give a few keywords, AI drafts the review.',
+              ),
+              trailing: Icon(
+                _showAssistant ? Icons.expand_less : Icons.expand_more,
+              ),
+              onTap: busy
+                  ? null
+                  : () => setState(() => _showAssistant = !_showAssistant),
+            ),
+            if (_showAssistant)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: _keywords,
+                      enabled: !busy,
+                      maxLength: ReviewRules.maxAiKeywordsLength,
+                      decoration: InputDecoration(
+                        hintText: 'stunning visuals, slow ending…',
+                        errorText: _aiError,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: busy ? null : _draft,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      icon: _drafting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.auto_awesome),
+                      label: Text(_drafting ? 'Writing…' : 'Draft my review'),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Uses your rating and keywords only. You can edit the '
+                      'draft before publishing.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),

@@ -1,3 +1,4 @@
+import '../models/ai_review_summary.dart';
 import '../models/rating_summary.dart';
 import '../models/review.dart';
 import '../models/review_activity.dart';
@@ -59,4 +60,14 @@ abstract class ReviewsRepository {
 
   /// Everything the signed-in user rated or reviewed.
   Future<List<ReviewActivity>> getMyActivity();
+
+  /// AI-written review draft from the user's [keywords].
+  Future<String> draftReview({
+    required int movieId,
+    required String movieTitle,
+    String? movieYear,
+    required String keywords,
+  });
+
+  Future<AiReviewSummary> getAiSummary(int movieId);
 }
