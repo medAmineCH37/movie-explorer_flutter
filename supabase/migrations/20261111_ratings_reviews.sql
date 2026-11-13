@@ -6,8 +6,6 @@
 -- * review_likes     one like per user and review, never on one's own review
 -- * review_reports   one report per user and review, 3–300 characters,
 --                    never on one's own review
--- * review_summaries AI summary cache, written only by the review-ai
---                    Edge Function (service role)
 --
 -- Movies are identified by their TMDB id (tmdb_movie_id), like favorites,
 -- watchlist and watched_movies.
@@ -114,17 +112,6 @@ create table if not exists public.review_reports (
   reason text not null check (char_length(reason) between 3 and 300),
   created_at timestamptz not null default now(),
   unique (review_id, reporter_user_id)
-);
-
--- ---------------------------------------------------------------------------
--- AI summary cache
--- ---------------------------------------------------------------------------
-
-create table if not exists public.review_summaries (
-  tmdb_movie_id integer primary key check (tmdb_movie_id > 0),
-  review_count integer not null,
-  summary jsonb not null,
-  generated_at timestamptz not null default now()
 );
 
 -- ---------------------------------------------------------------------------
@@ -247,41 +234,48 @@ create trigger review_reports_before_insert
 -- Authorisation
 -- ---------------------------------------------------------------------------
 
--- True when the caller is an administrator. main has no role column yet;
--- once profiles.role exists (User Management), admins are recognised
--- without another migration.
-create or replace function public.is_admin()
-returns boolean
-language plpgsql
-stable
-security definer
-set search_path = ''
-as $$
-declare
-  result boolean := false;
+-- True when the caller is an administrator. The real definition belongs to
+-- User Management (20261113_user_management_profiles.sql, profiles.role).
+-- This fallback is created only when no is_admin() exists yet, so this file
+-- never replaces it; until then it reads profiles.role if that column exists.
+do $do$
 begin
-  if auth.uid() is null then
-    return false;
+  if to_regprocedure('public.is_admin()') is null then
+    create function public.is_admin()
+    returns boolean
+    language plpgsql
+    stable
+    security definer
+    set search_path = ''
+    as $fn$
+    declare
+      result boolean := false;
+    begin
+      if auth.uid() is null then
+        return false;
+      end if;
+      if exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'profiles'
+          and column_name = 'role'
+      ) then
+        execute 'select role = ''admin'' from public.profiles where id = $1'
+          into result
+          using auth.uid();
+      end if;
+      return coalesce(result, false);
+    end;
+    $fn$;
+    grant execute on function public.is_admin() to authenticated;
   end if;
-  if exists (
-    select 1 from information_schema.columns
-    where table_schema = 'public'
-      and table_name = 'profiles'
-      and column_name = 'role'
-  ) then
-    execute 'select role = ''admin'' from public.profiles where id = $1'
-      into result
-      using auth.uid();
-  end if;
-  return coalesce(result, false);
 end;
-$$;
+$do$;
 
 alter table public.ratings enable row level security;
 alter table public.reviews enable row level security;
 alter table public.review_likes enable row level security;
 alter table public.review_reports enable row level security;
-alter table public.review_summaries enable row level security;
 
 drop policy if exists "Users manage their own reviews" on public.reviews;
 
@@ -369,13 +363,6 @@ create policy "Users report reviews"
 on public.review_reports for insert
 to authenticated
 with check ((select auth.uid()) = reporter_user_id);
-
--- Summary cache: public read; only the service role writes.
-drop policy if exists "Review summaries are public" on public.review_summaries;
-create policy "Review summaries are public"
-on public.review_summaries for select
-to anon, authenticated
-using (true);
 
 -- ---------------------------------------------------------------------------
 -- Read API
@@ -508,4 +495,3 @@ $$;
 
 grant execute on function public.get_movie_rating_summary(integer) to anon, authenticated;
 grant execute on function public.get_reviews(integer, uuid, text, integer, integer) to anon, authenticated;
-grant execute on function public.is_admin() to anon, authenticated;

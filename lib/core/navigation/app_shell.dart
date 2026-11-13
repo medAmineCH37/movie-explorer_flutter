@@ -18,7 +18,7 @@ class _Tab {
 
 const _tabs = [
   _Tab('/', 'Home', Icons.home_outlined, Icons.home_rounded),
-  _Tab('/search', 'Search', Icons.search_rounded, Icons.search_rounded),
+  _Tab('/discover', 'Search', Icons.search_rounded, Icons.search_rounded),
   _Tab('/for-you', 'For You', Icons.auto_awesome_outlined, Icons.auto_awesome),
   _Tab(
     '/lists',

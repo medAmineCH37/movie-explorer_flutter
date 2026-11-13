@@ -13,7 +13,7 @@ class AppDrawer extends ConsumerWidget {
 
   /// Main tabs are opened with `go` (they replace the current tab);
   /// other pages are pushed so the back arrow returns here.
-  static const _tabPaths = {'/', '/search', '/for-you', '/lists', '/profile'};
+  static const _tabPaths = {'/', '/discover', '/for-you', '/lists', '/profile'};
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -115,7 +115,7 @@ class AppDrawer extends ConsumerWidget {
             section('Discover'),
             item(Icons.home_rounded, 'Home', '/'),
             item(Icons.local_movies_outlined, 'All movies', '/movies'),
-            item(Icons.search_rounded, 'Search', '/search'),
+            item(Icons.travel_explore, 'Search & discover', '/discover'),
             item(Icons.auto_awesome, 'For You', '/for-you'),
             section('My library'),
             item(Icons.video_library_outlined, 'My lists', '/lists'),

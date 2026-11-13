@@ -1,39 +1,42 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/movie_category.dart';
-import '../../data/services/tmdb_service.dart';
+import '../../data/repositories/supabase_movies_repository.dart';
+import '../../domain/repositories/movies_repository.dart';
 import '../controllers/movie_catalog_controller.dart';
+import '../movie_actions.dart';
 import '../widgets/movie_card.dart';
 import '../widgets/movie_state_views.dart';
 
-/// Browsable catalogue: one tab per TMDB list, infinite scrolling grid.
+/// Browsable catalogue: one tab per list, infinite scrolling grid, and an
+/// "Add movie" button.
 class MovieCatalogPage extends StatefulWidget {
   const MovieCatalogPage({
     super.key,
     this.initialCategory = MovieCategory.popular,
-    this.tmdbService,
+    this.repository,
   });
 
   final MovieCategory initialCategory;
-  final TmdbService? tmdbService;
+  final MoviesRepository? repository;
 
   @override
   State<MovieCatalogPage> createState() => _MovieCatalogPageState();
 }
 
 class _MovieCatalogPageState extends State<MovieCatalogPage> {
-  late final TmdbService _tmdbService;
+  late final MoviesRepository _repository;
   late final Map<MovieCategory, MovieCatalogController> _controllers;
 
   @override
   void initState() {
     super.initState();
-    _tmdbService = widget.tmdbService ?? TmdbService();
+    _repository = widget.repository ?? SupabaseMoviesRepository();
     _controllers = {
       for (final category in MovieCategory.values)
         category: MovieCatalogController(
           category: category,
-          tmdbService: _tmdbService,
+          repository: _repository,
         ),
     };
   }
@@ -43,7 +46,6 @@ class _MovieCatalogPageState extends State<MovieCatalogPage> {
     for (final controller in _controllers.values) {
       controller.dispose();
     }
-    if (widget.tmdbService == null) _tmdbService.dispose();
     super.dispose();
   }
 
@@ -66,6 +68,11 @@ class _MovieCatalogPageState extends State<MovieCatalogPage> {
                 Tab(icon: Icon(category.icon), text: category.label),
             ],
           ),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => MovieActions.openEditor(context, _repository),
+          icon: const Icon(Icons.add),
+          label: const Text('Add movie'),
         ),
         body: TabBarView(
           children: [

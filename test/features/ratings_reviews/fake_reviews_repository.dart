@@ -1,4 +1,3 @@
-import 'package:movie_explorer/features/ratings_reviews/domain/models/ai_review_summary.dart';
 import 'package:movie_explorer/features/ratings_reviews/domain/models/rating_summary.dart';
 import 'package:movie_explorer/features/ratings_reviews/domain/models/review.dart';
 import 'package:movie_explorer/features/ratings_reviews/domain/models/review_activity.dart';
@@ -48,6 +47,7 @@ class FakeReviewsRepository implements ReviewsRepository {
   final Map<(String, int), int> ratings = {};
   final List<Review> reviews = [];
   final Set<(int, String)> reports = {};
+  String? lastReportReason;
   final List<String> calls = [];
   ReviewException? failWith;
 
@@ -244,6 +244,7 @@ class FakeReviewsRepository implements ReviewsRepository {
     if (!reports.add((reviewId, _user))) {
       throw const ReviewException('You already reported this review.');
     }
+    lastReportReason = reason;
   }
 
   @override
@@ -257,29 +258,6 @@ class FakeReviewsRepository implements ReviewsRepository {
             e.key.$2: (e.value, DateTime(2026, 2, e.key.$2)),
       },
       reviews: reviews.where((r) => r.userId == user).map(_view).toList(),
-    );
-  }
-
-  @override
-  Future<String> draftReview({
-    required int movieId,
-    required String movieTitle,
-    String? movieYear,
-    required String keywords,
-  }) async {
-    _check('draft');
-    return 'Draft about $movieTitle: $keywords.';
-  }
-
-  @override
-  Future<AiReviewSummary> getAiSummary(int movieId) async {
-    _check('aiSummary');
-    return AiReviewSummary(
-      summary: 'Viewers loved it.',
-      strengths: const ['Acting'],
-      weaknesses: const ['Length'],
-      reviewCount: reviews.where((r) => r.movieId == movieId).length,
-      generatedAt: DateTime(2026),
     );
   }
 }

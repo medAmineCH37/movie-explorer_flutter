@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../movie_management/data/models/movie.dart';
-import '../../../movie_management/data/services/tmdb_service.dart';
+import '../../../movie_management/data/repositories/supabase_movies_repository.dart';
 import '../../data/repositories/reviews_repository_impl.dart';
 import '../../domain/models/review.dart';
 import '../../domain/models/review_activity.dart';
@@ -35,25 +35,8 @@ class MyRatingsController extends ChangeNotifier {
   ReviewsRepository get repository => _repository;
   bool get isSignedIn => _repository.currentUserId != null;
 
-  MovieLookup get _movieLookup => lookup ??= _lookupMoviesFromTmdb;
-
-  Future<Map<int, Movie>> _lookupMoviesFromTmdb(List<int> movieIds) async {
-    final tmdb = TmdbService();
-    final movies = <int, Movie>{};
-    try {
-      for (final movieId in movieIds) {
-        try {
-          final json = await tmdb.getMovieDetails(movieId);
-          movies[movieId] = Movie.fromJson(json);
-        } on TmdbException catch (error) {
-          if (!error.isNotFound) rethrow;
-        }
-      }
-      return movies;
-    } finally {
-      tmdb.dispose();
-    }
-  }
+  MovieLookup get _movieLookup =>
+      lookup ??= SupabaseMoviesRepository().getMoviesByIds;
 
   Future<void> load() async {
     if (!isSignedIn) {
