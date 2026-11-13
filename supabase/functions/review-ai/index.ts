@@ -116,6 +116,7 @@ async function generate(
             generationConfig: {
               temperature: 0.7,
               maxOutputTokens: options.maxOutputTokens,
+              thinkingConfig: { thinkingBudget: 0 },
               ...(options.json
                 ? { responseMimeType: "application/json" }
                 : {}),
@@ -197,7 +198,7 @@ async function draft(req: Request, body: Record<string, unknown>) {
     "- Write in the language of the viewer's notes.",
   ].join("\n");
 
-  const text = cleanDraft(await generate(prompt, { maxOutputTokens: 400 }));
+  const text = cleanDraft(await generate(prompt, { maxOutputTokens: 1024 }));
   if (text.length < 3) throw new HttpError(503, UNAVAILABLE);
   return { draft: text };
 }
