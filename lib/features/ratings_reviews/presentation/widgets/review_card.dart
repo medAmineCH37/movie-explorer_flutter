@@ -5,6 +5,7 @@ import '../../domain/models/review.dart';
 import '../../domain/review_rules.dart';
 import '../relative_time.dart';
 import 'star_rating.dart';
+import 'report_review_dialog.dart';
 
 enum ReviewBadge { mine, mostLiked }
 
@@ -46,8 +47,7 @@ class _ReviewCardState extends State<ReviewCard> {
   bool get _canEdit => _review.isMine && widget.onEdit != null;
   bool get _canDelete =>
       (_review.isMine || widget.isAdmin) && widget.onDelete != null;
-  bool get _canReport =>
-      widget.isSignedIn && !_review.isMine && widget.onReport != null;
+  bool get _canReport => widget.isSignedIn && !_review.isMine;
 
   Future<void> _like() async {
     if (_liking || widget.onLike == null) return;
@@ -98,7 +98,7 @@ class _ReviewCardState extends State<ReviewCard> {
           const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: _review.spoiler && !_review.isMine && !_spoilerRevealed
+            child: _review.spoiler && !_spoilerRevealed
                 ? _SpoilerCover(
                     onReveal: () => setState(() => _spoilerRevealed = true),
                   )
@@ -149,6 +149,13 @@ class _ReviewCardState extends State<ReviewCard> {
             ),
             child: Text(_expanded ? 'Show less' : 'Read more'),
           ),
+          if (_review.spoiler)
+            TextButton.icon(
+              onPressed: () => setState(() => _spoilerRevealed = false),
+              style: TextButton.styleFrom(padding: EdgeInsets.zero),
+              icon: const Icon(Icons.visibility_off_outlined, size: 18),
+              label: const Text('Hide spoiler'),
+            ),
       ],
     );
   }
@@ -208,7 +215,7 @@ class _ReviewCardState extends State<ReviewCard> {
           case 'delete':
             widget.onDelete?.call();
           case 'report':
-            widget.onReport?.call();
+            showReportReviewDialog(context);
         }
       },
       itemBuilder: (context) => [
@@ -357,24 +364,25 @@ class _SpoilerCover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Material(
-      color: colors.errorContainer.withValues(alpha: 0.35),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colors.errorContainer.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(12),
-        onTap: onReveal,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Icon(Icons.visibility_off_outlined, color: colors.error),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text('This review contains spoilers. Tap to reveal it.'),
-              ),
-            ],
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.visibility_off_outlined, color: colors.error),
+          const SizedBox(height: 8),
+          const Text('This review contains spoilers.'),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: onReveal,
+            icon: const Icon(Icons.visibility_outlined, size: 18),
+            label: const Text('Show review'),
           ),
-        ),
+        ],
       ),
     );
   }
