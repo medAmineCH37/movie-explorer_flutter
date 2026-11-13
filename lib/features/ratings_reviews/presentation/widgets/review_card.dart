@@ -5,7 +5,6 @@ import '../../domain/models/review.dart';
 import '../../domain/review_rules.dart';
 import '../relative_time.dart';
 import 'star_rating.dart';
-import 'report_review_dialog.dart';
 
 enum ReviewBadge { mine, mostLiked }
 
@@ -47,7 +46,8 @@ class _ReviewCardState extends State<ReviewCard> {
   bool get _canEdit => _review.isMine && widget.onEdit != null;
   bool get _canDelete =>
       (_review.isMine || widget.isAdmin) && widget.onDelete != null;
-  bool get _canReport => widget.isSignedIn && !_review.isMine;
+  bool get _canReport =>
+      widget.isSignedIn && !_review.isMine && widget.onReport != null;
 
   Future<void> _like() async {
     if (_liking || widget.onLike == null) return;
@@ -98,7 +98,7 @@ class _ReviewCardState extends State<ReviewCard> {
           const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: _review.spoiler && !_spoilerRevealed
+            child: _review.spoiler && !_review.isMine && !_spoilerRevealed
                 ? _SpoilerCover(
                     onReveal: () => setState(() => _spoilerRevealed = true),
                   )
@@ -149,13 +149,15 @@ class _ReviewCardState extends State<ReviewCard> {
             ),
             child: Text(_expanded ? 'Show less' : 'Read more'),
           ),
-          if (_review.spoiler)
-            TextButton.icon(
-              onPressed: () => setState(() => _spoilerRevealed = false),
-              style: TextButton.styleFrom(padding: EdgeInsets.zero),
-              icon: const Icon(Icons.visibility_off_outlined, size: 18),
-              label: const Text('Hide spoiler'),
-            ),
+        // Readers who revealed a spoiler can hide it again; the author
+        // always sees their own review.
+        if (_review.spoiler && !_review.isMine)
+          TextButton.icon(
+            onPressed: () => setState(() => _spoilerRevealed = false),
+            style: TextButton.styleFrom(padding: EdgeInsets.zero),
+            icon: const Icon(Icons.visibility_off_outlined, size: 18),
+            label: const Text('Hide spoiler'),
+          ),
       ],
     );
   }
@@ -215,7 +217,7 @@ class _ReviewCardState extends State<ReviewCard> {
           case 'delete':
             widget.onDelete?.call();
           case 'report':
-            showReportReviewDialog(context);
+            widget.onReport?.call();
         }
       },
       itemBuilder: (context) => [

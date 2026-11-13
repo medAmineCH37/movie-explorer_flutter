@@ -1,28 +1,28 @@
 import '../../../movie_management/data/models/movie.dart';
-import '../../../movie_management/data/services/tmdb_service.dart';
+import '../../../movie_management/data/repositories/supabase_movies_repository.dart';
+import '../../../movie_management/domain/repositories/movies_repository.dart';
 
 class CollectionMovieService {
-  CollectionMovieService({TmdbService? tmdbService})
-    : _tmdbService = tmdbService ?? TmdbService();
+  CollectionMovieService({MoviesRepository? repository})
+    : _injected = repository;
 
-  final TmdbService _tmdbService;
+  final MoviesRepository? _injected;
 
+  late final MoviesRepository _movies = _injected ?? SupabaseMoviesRepository();
+
+  /// Movies in the order of [movieIds]; movies deleted from the catalogue
+  /// are skipped.
   Future<List<Movie>> getMoviesByIds(List<int> movieIds) async {
     if (movieIds.isEmpty) {
       return [];
     }
 
-    final movies = await Future.wait(
-      movieIds.map((id) async {
-        final details = await _tmdbService.getMovieDetails(id);
-        return Movie.fromJson(details);
-      }),
-    );
-
-    return movies;
+    final found = await _movies.getMoviesByIds(movieIds);
+    return [
+      for (final id in movieIds)
+        if (found[id] != null) found[id]!,
+    ];
   }
 
-  void dispose() {
-    _tmdbService.dispose();
-  }
+  void dispose() {}
 }

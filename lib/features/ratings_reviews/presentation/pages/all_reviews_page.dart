@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../movie_management/data/models/movie.dart';
+import '../../../movie_management/data/repositories/supabase_movies_repository.dart';
+import '../../../movie_management/domain/repositories/movies_repository.dart';
 import '../../../movie_management/presentation/widgets/movie_poster_image.dart';
 import '../../domain/models/review_sort.dart';
 import '../../domain/repositories/reviews_repository.dart';
 import '../controllers/all_reviews_controller.dart';
-import '../widgets/ai_review_summary_card.dart';
 import '../widgets/rating_summary_card.dart';
 import '../widgets/review_actions.dart';
 
@@ -16,11 +17,15 @@ class AllReviewsPage extends StatefulWidget {
     required this.movieId,
     this.movie,
     this.repository,
+    this.moviesRepository,
   });
 
   final int movieId;
+
+  /// Movie already loaded by the caller (route `extra`); fetched otherwise.
   final Movie? movie;
   final ReviewsRepository? repository;
+  final MoviesRepository? moviesRepository;
 
   @override
   State<AllReviewsPage> createState() => _AllReviewsPageState();
@@ -38,7 +43,21 @@ class _AllReviewsPageState extends State<AllReviewsPage> {
       movieId: widget.movieId,
       repository: widget.repository,
     )..load();
-    _movie = widget.movie;
+    _loadMovie();
+  }
+
+  Future<void> _loadMovie() async {
+    if (widget.movie != null) {
+      _movie = widget.movie;
+      return;
+    }
+    try {
+      final movies = widget.moviesRepository ?? SupabaseMoviesRepository();
+      final found = await movies.getMoviesByIds([widget.movieId]);
+      if (mounted) setState(() => _movie = found[widget.movieId]);
+    } catch (_) {
+      // The reviews stay usable without movie metadata.
+    }
   }
 
   @override
@@ -92,12 +111,6 @@ class _AllReviewsPageState extends State<AllReviewsPage> {
                 const SizedBox(height: 16),
                 RatingSummaryCard(summary: c.summary),
                 const SizedBox(height: 12),
-                AiReviewSummaryCard(
-                  repository: c.repository,
-                  movieId: widget.movieId,
-                  reviewCount: c.summary.reviewCount,
-                ),
-                const SizedBox(height: 16),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(

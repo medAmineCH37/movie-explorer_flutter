@@ -4,6 +4,7 @@ import '../../domain/models/review.dart';
 import '../../domain/repositories/reviews_repository.dart';
 import 'review_card.dart';
 import 'review_composer_sheet.dart';
+import 'report_review_dialog.dart';
 import 'review_dialogs.dart';
 
 /// Builds [ReviewCard]s wired to the shared review actions (like, edit,
@@ -91,7 +92,7 @@ class ReviewCardActions {
   }
 
   Future<void> _report(BuildContext context, Review review) async {
-    final sent = await showReportSheet(
+    final sent = await showReportReviewDialog(
       context,
       onSubmit: (reason) => report(review, reason),
     );

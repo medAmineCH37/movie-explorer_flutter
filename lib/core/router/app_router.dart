@@ -8,7 +8,8 @@ import '../../features/movie_management/data/models/movie.dart';
 import '../../features/movie_management/data/models/movie_category.dart';
 import '../../features/movie_management/presentation/pages/movie_catalog_page.dart';
 import '../../features/movie_management/presentation/pages/movie_details_page.dart';
-import '../../features/movie_discovery/presentation/pages/movie_search_page.dart';
+import '../../features/movie_discovery/presentation/pages/movie_discovery_page.dart';
+import '../../features/movie_management/presentation/pages/movie_form_page.dart';
 import '../../features/personal_collection/presentation/pages/collection_page.dart';
 import '../../features/ratings_reviews/presentation/pages/all_reviews_page.dart';
 import '../../features/ratings_reviews/presentation/pages/my_ratings_page.dart';
@@ -142,6 +143,22 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) =>
+                _withBackFallback(context, const MovieFormPage()),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/movie/:movieId/edit',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['movieId'] ?? '');
+          return id == null
+              ? const Scaffold(body: Center(child: Text('Invalid movie ID')))
+              : _withBackFallback(context, MovieFormPage(movieId: id));
+        },
       ),
       GoRoute(
         path: '/movie/:movieId/reviews',
@@ -169,10 +186,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: '/search',
+        path: '/discover',
         builder: (context, state) =>
-            _withBackFallback(context, const MovieSearchPage()),
+            _withBackFallback(context, const MovieDiscoveryPage()),
       ),
+      // Former TMDB search screen, now part of Discovery.
+      GoRoute(path: '/search', redirect: (context, state) => '/discover'),
       GoRoute(
         path: '/module/:moduleId',
         builder: (context, state) => _withBackFallback(
@@ -198,11 +217,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         '/auth/register',
       }.contains(location);
       if (authState.isLoading) return null;
+      // Movie pages and their reviews are public; editing needs an account.
+      final publicMoviePage =
+          location.startsWith('/movie/') && !location.endsWith('/edit');
       if (authState.user == null &&
           location != '/' &&
           !authPage &&
           location != '/movie' &&
-          !location.startsWith('/movie/')) {
+          !publicMoviePage) {
         return Uri(
           path: '/login',
           queryParameters: {'redirect': state.uri.toString()},

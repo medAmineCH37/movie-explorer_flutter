@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:movie_explorer/features/ratings_reviews/domain/models/ai_review_summary.dart';
 import 'package:movie_explorer/features/ratings_reviews/domain/models/rating_summary.dart';
 import 'package:movie_explorer/features/ratings_reviews/domain/models/review.dart';
 import 'package:movie_explorer/features/ratings_reviews/domain/models/review_activity.dart';
@@ -32,11 +31,6 @@ void main() {
       expect(ReviewRules.validateReportReason(' no '), isNotNull);
       expect(ReviewRules.validateReportReason('spam'), isNull);
       expect(ReviewRules.validateReportReason('r' * 301), isNotNull);
-    });
-
-    test('AI keywords need at least 2 characters', () {
-      expect(ReviewRules.validateAiKeywords(' a '), isNotNull);
-      expect(ReviewRules.validateAiKeywords('ok'), isNull);
     });
   });
 
@@ -189,23 +183,6 @@ void main() {
       expect(stats.averageScore, 3);
       expect(stats.likesReceived, 4);
       expect(ReviewStats.from(const []).averageScore, isNull);
-    });
-  });
-
-  group('AiReviewSummary.fromJson', () {
-    test('drops blank points', () {
-      final s = AiReviewSummary.fromJson({
-        'summary': ' Good. ',
-        'strengths': ['Acting', ' ', 3],
-        'weaknesses': null,
-        'review_count': 4,
-        'generated_at': '2026-11-11T10:00:00Z',
-        'cached': true,
-      });
-      expect(s.summary, 'Good.');
-      expect(s.strengths, ['Acting']);
-      expect(s.weaknesses, isEmpty);
-      expect(s.cached, isTrue);
     });
   });
 

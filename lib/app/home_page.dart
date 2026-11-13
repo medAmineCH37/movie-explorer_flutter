@@ -4,22 +4,23 @@ import 'package:movie_explorer/core/widgets/cinea_app_bar.dart';
 
 import '../features/movie_management/data/models/movie.dart';
 import '../features/movie_management/data/models/movie_category.dart';
-import '../features/movie_management/data/services/tmdb_service.dart';
+import '../features/movie_management/data/repositories/supabase_movies_repository.dart';
+import '../features/movie_management/domain/repositories/movies_repository.dart';
 import '../features/movie_management/presentation/widgets/featured_movie_card.dart';
 import '../features/movie_management/presentation/widgets/movie_row_section.dart';
 import '../features/movie_management/presentation/widgets/movie_state_views.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, this.tmdbService});
+  const HomePage({super.key, this.moviesRepository});
 
-  final TmdbService? tmdbService;
+  final MoviesRepository? moviesRepository;
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  late final TmdbService _tmdbService;
+  late final MoviesRepository _movies;
 
   final Map<MovieCategory, Future<List<Movie>>> _categoryFutures = {};
 
@@ -35,6 +36,12 @@ class _HomePageState extends State<HomePage> {
       title: 'Movie Management',
       description: 'Explore movie details and metadata',
       icon: Icons.movie_outlined,
+    ),
+    _ModuleItem(
+      id: 'movie-discovery',
+      title: 'Movie Discovery',
+      description: 'Search, filter, add and edit movies',
+      icon: Icons.travel_explore,
     ),
     _ModuleItem(
       id: 'ratings-reviews',
@@ -65,24 +72,17 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _tmdbService = widget.tmdbService ?? TmdbService();
+    _movies = widget.moviesRepository ?? SupabaseMoviesRepository();
     for (final category in MovieCategory.values) {
       _categoryFutures[category] = _loadCategory(category);
     }
-  }
-
-  @override
-  void dispose() {
-    if (widget.tmdbService == null) _tmdbService.dispose();
-    super.dispose();
   }
 
   /// Rows below the fold may not be built yet, so nothing listens to their
   /// future; `ignore()` keeps a failure from becoming an unhandled error
   /// while FutureBuilder still receives it once the row is shown.
   Future<List<Movie>> _loadCategory(MovieCategory category) {
-    return _tmdbService.getMovies(category).then((page) => page.movies)
-      ..ignore();
+    return _movies.getCategory(category).then((page) => page.movies)..ignore();
   }
 
   void _retryCategory(MovieCategory category) {
@@ -97,6 +97,7 @@ class _HomePageState extends State<HomePage> {
       'subscription-management' => '/subscription',
       'recommendations-custom-lists' => '/for-you',
       'movie-management' => '/movies',
+      'movie-discovery' => '/discover',
       'ratings-reviews' => '/my-ratings',
       _ => '/module/$moduleId',
     };
@@ -111,7 +112,7 @@ class _HomePageState extends State<HomePage> {
         title: 'Movie Explorer',
         actions: [
           IconButton(
-            onPressed: () => context.push('/search'),
+            onPressed: () => context.push('/discover'),
             icon: const Icon(Icons.search),
             tooltip: 'Search movies',
           ),
@@ -158,7 +159,7 @@ class _HomePageState extends State<HomePage> {
 
                 if (snapshot.hasError) {
                   return MovieLoadError(
-                    message: 'Could not load movies from TMDB.',
+                    message: 'Could not load movies.',
                     onRetry: () => _retryCategory(MovieCategory.popular),
                   );
                 }

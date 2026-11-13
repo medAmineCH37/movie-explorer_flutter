@@ -2,7 +2,7 @@
 
 A Flutter application for discovering movies, exploring movie details, searching a movie catalogue, and managing personalized movie experiences.
 
-Developed as a team project using Flutter, the TMDB API, and Supabase.
+Developed as a team project using Flutter and Supabase. The movie catalogue is stored in Supabase and seeded with 100 movies from TMDB.
 
 ## Project Status
 
@@ -12,7 +12,7 @@ The application is being developed collaboratively in separate feature modules. 
 
 ### Implemented
 
-- Browse popular movies from TMDB.
+- Browse the movie catalogue stored in Supabase.
 - Search movies and view movie details.
 - Register, sign in, and sign out using Supabase Authentication.
 - Store application data in Supabase.
@@ -24,6 +24,20 @@ The application is being developed collaboratively in separate feature modules. 
   - Add or remove movies directly from the Movie Details page.
   - Refresh collection data when navigating back from movie details.
 
+- **Movie Management**
+  - Movie catalogue stored in Supabase (`movies`, `genres`, `movie_genres`, `movie_credits`), seeded with 100 movies from TMDB.
+  - Add, edit and delete movies (any signed-in user): title, dates, runtime, language, status, rating, genres, synopsis, poster/backdrop, trailer, directors and cast.
+  - Popular, top-rated, now-playing and upcoming lists, with a featured movie on the home screen.
+  - Catalogue screen with one tab per list and infinite scrolling.
+  - Movie details with cast, directors, trailer, runtime, language and catalogue rating.
+- **Movie Discovery**
+  - Search by title, filter by genres, release years, minimum rating and language, sort by popularity, rating, date or title.
+  - Edit or delete movies straight from the results, and add new ones.
+- **Ratings & Reviews**
+  - 1–5 star ratings (Mauvais to Chef-d'œuvre) with a community average, vote count and distribution.
+  - One review per user and movie, with a spoiler flag, likes, reports and an edited indicator.
+  - Full review list with four sorts and 10 reviews per page.
+  - My ratings & reviews screen with personal statistics.
 - **Recommendations & Custom Lists** (Module 6)
   - "For You" page: hero carousel, personal picks with % match, Top 10, genre rows.
   - Custom lists: 2–50 character name unique per user (case-insensitive), 20 lists and 100 movies max, no duplicates, private or public, owner-only edits.
@@ -31,15 +45,11 @@ The application is being developed collaboratively in separate feature modules. 
   - Score = 2 × seed movies recommending it + 1 × shared favorite genres + TMDB rating / 10, shown as 55–99 % match. Falls back to trending without signals.
   - Requires `supabase/migrations/20261107_recommendations_custom_lists.sql`.
 
-### Planned / In Development
-
-- Ratings and Reviews Management.
-- Movie Discovery Management.
 
 ## Technology Stack
 
 - **Frontend:** Flutter and Dart
-- **Movie catalogue:** TMDB API
+- **Movie catalogue:** Supabase (sample data from TMDB)
 - **Backend services and database:** Supabase
 - **Navigation:** GoRouter
 - **State management:** Riverpod
@@ -65,7 +75,7 @@ Install the following before running the project:
 - Flutter SDK and Dart SDK
 - Android Studio or another supported Flutter development environment
 - Git
-- A TMDB API key
+- A TMDB API key (only to regenerate the sample movies)
 - A Supabase project with the required database schema
 
 Verify your Flutter installation:
@@ -91,7 +101,7 @@ flutter pub get
 
 ### 3. Configure environment variables
 
-The project uses a local environment file for TMDB and Supabase credentials.
+The project uses a local environment file for Supabase credentials (and the TMDB key used by the seed tool).
 
 1. Copy the example configuration file:
 
@@ -101,7 +111,7 @@ The project uses a local environment file for TMDB and Supabase credentials.
 
 2. Open `env.json` and replace the placeholder values with your credentials:
 
-   - `TMDB_API_KEY`: Your TMDB API key.
+   - `TMDB_API_KEY`: Your TMDB API key. Only `tool/generate_movie_seed.dart` uses it; the app does not call TMDB.
    - `SUPABASE_URL`: Your Supabase project URL.
    - `SUPABASE_ANON_KEY`: Your Supabase publishable or anon key, as expected by the project.
 
@@ -117,6 +127,14 @@ Each team member must configure their own local `env.json` before running the ap
 4. Confirm that the required tables, trigger, and Row Level Security policies exist.
 
 The project must use a compatible schema before features that store user data can work.
+
+Then run the migrations in `supabase/migrations/` in date order. `20261111_ratings_reviews.sql` creates the Ratings & Reviews tables (`ratings`, `review_likes`, `review_reports`), their policies and read functions, and migrates the old `reviews` table: each 1–10 rating becomes a 1–5 rating, rounded up. It can safely be run more than once.
+
+`20261112_movies_catalogue.sql` creates the movie catalogue tables. After all migrations, load the sample catalogue with `supabase/seed/movies_seed.sql` (100 movies, their genres, directors and cast). Both are safe to run again. To refresh the sample data from TMDB:
+
+```bash
+dart run tool/generate_movie_seed.dart
+```
 
 ### 5. Run the application
 

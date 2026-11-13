@@ -1,69 +1,97 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../personal_collection/presentation/widgets/movie_collection_actions.dart';
 import '../../../ratings_reviews/presentation/widgets/movie_reviews_section.dart';
 import '../../../recommendations_custom_lists/presentation/widgets/add_to_list_sheet.dart';
 import '../../data/models/movie_details.dart';
-import '../../data/services/tmdb_service.dart';
+import '../../data/repositories/supabase_movies_repository.dart';
+import '../../domain/repositories/movies_repository.dart';
+import '../movie_actions.dart';
 import '../movie_formatters.dart';
 import '../widgets/movie_card.dart';
 import '../widgets/movie_poster_image.dart';
 
 class MovieDetailsPage extends StatefulWidget {
-  const MovieDetailsPage({super.key, required this.movieId, this.tmdbService});
+  const MovieDetailsPage({super.key, required this.movieId, this.repository});
 
   final int movieId;
-  final TmdbService? tmdbService;
+  final MoviesRepository? repository;
 
   @override
   State<MovieDetailsPage> createState() => _MovieDetailsPageState();
 }
 
 class _MovieDetailsPageState extends State<MovieDetailsPage> {
-  late final TmdbService _tmdbService;
-  late Future<MovieDetails> _detailsFuture;
+  late final MoviesRepository _repository;
+  late Future<MovieDetails?> _detailsFuture;
 
   @override
   void initState() {
     super.initState();
-    _tmdbService = widget.tmdbService ?? TmdbService();
-    _detailsFuture = _tmdbService.getFullMovieDetails(widget.movieId);
+    _repository = widget.repository ?? SupabaseMoviesRepository();
+    _detailsFuture = _repository.getMovie(widget.movieId);
   }
 
-  @override
-  void dispose() {
-    if (widget.tmdbService == null) _tmdbService.dispose();
-    super.dispose();
-  }
-
-  void _retry() {
+  void _reload() {
     setState(() {
-      _detailsFuture = _tmdbService.getFullMovieDetails(widget.movieId);
+      _detailsFuture = _repository.getMovie(widget.movieId);
     });
+  }
+
+  Future<void> _edit() async {
+    final saved = await MovieActions.openEditor(
+      context,
+      _repository,
+      movieId: widget.movieId,
+    );
+    if (saved && mounted) {
+      MovieActions.showMessage(context, 'Movie updated.');
+      _reload();
+    }
+  }
+
+  Future<void> _delete(MovieDetails details) async {
+    final deleted = await MovieActions.delete(
+      context,
+      _repository,
+      movieId: details.id,
+      title: details.movie.title,
+    );
+    if (!deleted || !mounted) return;
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/movies');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder<MovieDetails>(
+      body: FutureBuilder<MovieDetails?>(
         future: _detailsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final details = snapshot.data;
-          if (snapshot.hasError || details == null) {
-            final error = snapshot.error;
-            return _ErrorView(
-              notFound: error is TmdbException && error.isNotFound,
-              onRetry: _retry,
-            );
+          if (snapshot.hasError) {
+            return _ErrorView(notFound: false, onRetry: _reload);
           }
 
-          return _DetailsView(details: details);
+          final details = snapshot.data;
+          if (details == null) {
+            return _ErrorView(notFound: true, onRetry: _reload);
+          }
+
+          return _DetailsView(
+            details: details,
+            onEdit: _edit,
+            onDelete: () => _delete(details),
+          );
         },
       ),
     );
@@ -71,9 +99,15 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
 }
 
 class _DetailsView extends StatelessWidget {
-  const _DetailsView({required this.details});
+  const _DetailsView({
+    required this.details,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final MovieDetails details;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +125,19 @@ class _DetailsView extends StatelessWidget {
             tooltip: 'Back',
             onPressed: () => Navigator.of(context).maybePop(),
           ),
+          actions: [
+            IconButton(
+              tooltip: 'Edit movie',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: onEdit,
+            ),
+            IconButton(
+              tooltip: 'Delete movie',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: onDelete,
+            ),
+            const SizedBox(width: 4),
+          ],
           flexibleSpace: FlexibleSpaceBar(
             background: Stack(
               fit: StackFit.expand,
@@ -212,7 +259,7 @@ class _Header extends StatelessWidget {
     final meta = [
       ?movie.releaseYear,
       ?MovieFormatters.runtime(movie.runtime),
-      ?(details.languageName ?? movie.originalLanguage?.toUpperCase()),
+      ?details.languageName,
     ];
 
     return Row(
@@ -266,8 +313,9 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// TMDB score, labelled with its source so it is not confused with the
-/// community rating.
+/// Catalogue score (TMDB votes for seeded movies, or the rating entered when
+/// the movie was added), labelled so it is not confused with the community
+/// rating.
 class _SourceRating extends StatelessWidget {
   const _SourceRating({required this.score, required this.voteCount});
 
@@ -277,7 +325,7 @@ class _SourceRating extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasScore = voteCount > 0 && score > 0;
+    final hasScore = score > 0;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -313,10 +361,12 @@ class _SourceRating extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    hasScore
+                    !hasScore
+                        ? 'No catalogue rating yet'
+                        : voteCount > 0
                         ? 'TMDB rating · '
                               '${MovieFormatters.compactCount(voteCount)} votes'
-                        : 'No TMDB rating yet',
+                        : 'Catalogue rating',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -362,7 +412,7 @@ class _TrailerButton extends StatelessWidget {
       onPressed: () => _open(context),
       style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
       icon: const Icon(Icons.play_circle_outline),
-      label: Text(trailer.type == 'Teaser' ? 'Watch teaser' : 'Watch trailer'),
+      label: const Text('Watch trailer'),
     );
   }
 }
@@ -438,8 +488,7 @@ class _Facts extends StatelessWidget {
   Widget build(BuildContext context) {
     final movie = details.movie;
     final runtime = MovieFormatters.runtime(movie.runtime);
-    final language =
-        details.languageName ?? movie.originalLanguage?.toUpperCase();
+    final language = details.languageName;
     final facts = <(String, String)>[
       if (movie.releaseDate.isNotEmpty)
         ('Release date', MovieFormatters.date(movie.releaseDate)),
