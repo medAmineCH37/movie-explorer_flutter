@@ -8,6 +8,7 @@ import '../../../user_management/data/auth_service.dart';
 import '../../domain/models/subscription.dart';
 import '../controllers/subscription_controller.dart';
 import '../widgets/current_plan_card.dart';
+import '../widgets/payment_dialog.dart';
 import '../widgets/plan_card.dart';
 import '../widgets/subscription_history.dart';
 
@@ -49,11 +50,19 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
   }
 
   Future<void> _subscribe(SubscriptionPlan plan) async {
+    final lastDigits = await PaymentDialog.show(context, plan);
+    if (lastDigits == null || !mounted) return;
+
     final messenger = ScaffoldMessenger.of(context);
     try {
       await _controller.subscribe(plan);
       messenger.showSnackBar(
-        SnackBar(content: Text('You are now on ${plan.label}.')),
+        SnackBar(
+          content: Text(
+            'Payment accepted (card •••• $lastDigits). '
+            'You are now on ${plan.label}.',
+          ),
+        ),
       );
     } catch (_) {
       messenger.showSnackBar(
@@ -169,6 +178,14 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              if (_controller.isAdmin) ...[
+                FilledButton.tonalIcon(
+                  onPressed: () => context.push('/admin/subscriptions'),
+                  icon: const Icon(Icons.admin_panel_settings_outlined),
+                  label: const Text('Manage all subscriptions'),
+                ),
+                const SizedBox(height: 16),
+              ],
               CurrentPlanCard(
                 subscription: _controller.current,
                 isBusy: _controller.isBusy,
