@@ -77,6 +77,25 @@ class _UserDetailPageState extends State<UserDetailPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: _currentUser == null
+            ? const []
+            : [
+                IconButton(
+                  tooltip: 'Modifier le compte',
+                  onPressed: () => _editUser(_currentUser!),
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+                IconButton(
+                  tooltip: 'Supprimer le compte',
+                  onPressed: _currentUser!.id == _authService.currentUser?.id
+                      ? null
+                      : () => _confirmDeleteUser(_currentUser!),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Colors.redAccent,
+                  ),
+                ),
+              ],
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
@@ -88,6 +107,127 @@ class _UserDetailPageState extends State<UserDetailPage> {
       ),
       body: _buildContent(),
     );
+  }
+
+  Future<void> _editUser(UserModel user) async {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: user.name);
+    final emailController = TextEditingController(text: user.email);
+    final values = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Modifier le compte'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                autofocus: true,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Nom affiché'),
+                validator: (value) {
+                  final name = value?.trim() ?? '';
+                  if (name.length < 2 || name.length > 80) {
+                    return 'Le nom doit contenir entre 2 et 80 caractères.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Adresse e-mail',
+                  helperText: 'Le changement est appliqué immédiatement.',
+                ),
+                validator: (value) {
+                  final email = value?.trim() ?? '';
+                  if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
+                    return 'Saisissez une adresse e-mail valide.';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (!formKey.currentState!.validate()) return;
+              Navigator.pop(dialogContext, {
+                'displayName': nameController.text.trim(),
+                'email': emailController.text.trim(),
+              });
+            },
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+    nameController.dispose();
+    emailController.dispose();
+    if (values == null) return;
+
+    try {
+      await _authService.updateManagedUser(
+        userId: user.id,
+        displayName: values['displayName']!,
+        email: values['email']!,
+      );
+      if (!mounted) return;
+      await _fetchUser();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Compte mis à jour.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Échec de la mise à jour : $error')),
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteUser(UserModel user) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Supprimer ce compte ?'),
+        content: Text(
+          'Le compte de ${user.name} (${user.email}) et ses données liées seront supprimés définitivement.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await _authService.deleteManagedUser(user.id);
+      if (mounted) context.pop(true);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Échec de la suppression : $error')),
+      );
+    }
   }
 
   Widget _buildContent() {
