@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:movie_explorer/core/widgets/cinea_app_bar.dart';
 
 import '../features/movie_management/data/models/movie.dart';
 import '../features/movie_management/data/models/movie_category.dart';
@@ -7,13 +8,10 @@ import '../features/movie_management/data/services/tmdb_service.dart';
 import '../features/movie_management/presentation/widgets/featured_movie_card.dart';
 import '../features/movie_management/presentation/widgets/movie_row_section.dart';
 import '../features/movie_management/presentation/widgets/movie_state_views.dart';
-import '../features/user_management/data/services/auth_service.dart';
-import '../features/user_management/domain/auth_repository.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, this.authService, this.tmdbService});
+  const HomePage({super.key, this.tmdbService});
 
-  final AuthRepository? authService;
   final TmdbService? tmdbService;
 
   @override
@@ -22,7 +20,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final TmdbService _tmdbService;
-  late final AuthRepository _authService;
 
   final Map<MovieCategory, Future<List<Movie>>> _categoryFutures = {};
 
@@ -68,7 +65,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _authService = widget.authService ?? AuthService();
     _tmdbService = widget.tmdbService ?? TmdbService();
     for (final category in MovieCategory.values) {
       _categoryFutures[category] = _loadCategory(category);
@@ -95,76 +91,10 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future<void> _handleAccountTap() async {
-    final user = _authService.currentUser;
-
-    if (user == null) {
-      if (mounted) {
-        context.push('/login');
-      }
-      return;
-    }
-
-    if (!mounted) return;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const ListTile(
-                  leading: Icon(Icons.account_circle_outlined),
-                  title: Text('Your account'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.email_outlined),
-                  title: Text(user.email ?? 'No email available'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: const Text('Sign out'),
-                  onTap: () async {
-                    Navigator.of(sheetContext).pop();
-
-                    try {
-                      await _authService.signOut();
-
-                      if (!mounted) return;
-
-                      context.go('/');
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Signed out successfully.'),
-                        ),
-                      );
-                    } catch (_) {
-                      if (!mounted) return;
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Could not sign out. Please try again.',
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   String _routeFor(String moduleId) {
     return switch (moduleId) {
       'personal-collection' => '/collection',
+      'subscription-management' => '/subscription',
       'movie-management' => '/movies',
       _ => '/module/$moduleId',
     };
@@ -175,30 +105,14 @@ class _HomePageState extends State<HomePage> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.movie_filter_outlined),
-            SizedBox(width: 10),
-            Text(
-              'Movie Explorer',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
+      appBar: CineaAppBar(
+        title: 'Movie Explorer',
         actions: [
           IconButton(
             onPressed: () => context.push('/search'),
             icon: const Icon(Icons.search),
             tooltip: 'Search movies',
           ),
-          IconButton(
-            onPressed: _handleAccountTap,
-            icon: const Icon(Icons.account_circle_outlined),
-            tooltip: 'Account',
-          ),
-          const SizedBox(width: 8),
         ],
       ),
       body: SafeArea(

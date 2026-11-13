@@ -9,8 +9,9 @@ import '../theme/theme_mode_provider.dart';
 class CineaAppBar extends ConsumerStatefulWidget
     implements PreferredSizeWidget {
   final String title;
+  final List<Widget> actions;
 
-  const CineaAppBar({super.key, this.title = 'CINEA'});
+  const CineaAppBar({super.key, this.title = 'CINEA', this.actions = const []});
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -215,6 +216,7 @@ class _CineaAppBarState extends ConsumerState<CineaAppBar> {
         ),
       ),
       actions: [
+        ...widget.actions,
         PopupMenuButton<ThemeMode>(
           tooltip: 'Theme',
           icon: Icon(

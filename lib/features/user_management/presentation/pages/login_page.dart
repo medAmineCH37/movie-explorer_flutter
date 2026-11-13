@@ -148,6 +148,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           : () async {
                               if (_formKey.currentState!.validate()) {
                                 final router = GoRouter.of(context);
+                                final requestedRoute = GoRouterState.of(context)
+                                    .uri
+                                    .queryParameters['redirect'];
                                 final ok = await ref
                                     .read(authProvider.notifier)
                                     .login(_email.text.trim(), _password.text);
@@ -155,7 +158,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 if (!mounted) return;
 
                                 if (ok) {
-                                  router.go('/');
+                                  final destination =
+                                      requestedRoute != null &&
+                                          requestedRoute.startsWith('/') &&
+                                          !requestedRoute.startsWith('//')
+                                      ? requestedRoute
+                                      : '/';
+                                  router.go(destination);
                                 }
                               }
                             },

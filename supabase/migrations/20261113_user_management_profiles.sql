@@ -2,7 +2,6 @@ alter table public.profiles
   add column if not exists email text,
   add column if not exists role text not null default 'user',
   add column if not exists valide boolean not null default true,
-  add column if not exists is_subscribed boolean not null default false,
   add column if not exists updated_at timestamptz not null default now();
 
 update public.profiles p
@@ -67,12 +66,12 @@ as $$
 begin
   if (select auth.uid()) is not null and not (select public.is_admin()) then
     if tg_op = 'INSERT' then
-      if new.role <> 'user' or not new.valide or new.is_subscribed then
+      if new.role <> 'user' or not new.valide then
         raise exception 'Only an administrator can set profile privileges';
       end if;
     elsif new.role is distinct from old.role
        or new.valide is distinct from old.valide
-       or new.is_subscribed is distinct from old.is_subscribed then
+ then
       raise exception 'Only an administrator can change profile privileges';
     end if;
   end if;

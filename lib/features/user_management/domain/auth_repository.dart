@@ -22,7 +22,6 @@ abstract class AuthRepository {
   Future<void> signOut();
 
   Future<UserModel?> getProfile(String userId, String email);
-  Future<void> updateSubscription(String userId, bool nextState);
 
   // Méthodes d'Administration PWA
   Future<List<UserModel>> getAllUsers();

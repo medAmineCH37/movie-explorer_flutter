@@ -26,12 +26,7 @@ class AuthService implements AuthRepository {
       final response = await _client.auth.signUp(
         email: cleanEmail,
         password: password,
-        data: {
-          'display_name': cleanName,
-          'role': 'user',
-          'valide': true,
-          'is_subscribed': false,
-        },
+        data: {'display_name': cleanName, 'role': 'user', 'valide': true},
         emailRedirectTo: 'io.supabase.cinea://login-callback/',
       );
 
@@ -45,7 +40,6 @@ class AuthService implements AuthRepository {
             'username': cleanName,
             'role': 'user',
             'valide': true,
-            'is_subscribed': false,
             'created_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           });
@@ -128,7 +122,6 @@ class AuthService implements AuthRepository {
               currentUser?.userMetadata?['display_name'] ?? 'Cinéphile',
           'role': 'user',
           'valide': true,
-          'is_subscribed': false,
           'created_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
         };
@@ -141,7 +134,6 @@ class AuthService implements AuthRepository {
           name: newProfile['display_name'] as String,
           role: 'user',
           valide: true,
-          isSubscribed: false,
         );
       }
 
@@ -157,20 +149,8 @@ class AuthService implements AuthRepository {
         name: currentUser?.userMetadata?['display_name'] ?? 'Cinéphile',
         role: 'user',
         valide: true,
-        isSubscribed: false,
       );
     }
-  }
-
-  @override
-  Future<void> updateSubscription(String userId, bool nextState) async {
-    await _client
-        .from('profiles')
-        .update({
-          'is_subscribed': nextState,
-          'updated_at': DateTime.now().toIso8601String(),
-        })
-        .eq('id', userId);
   }
 
   @override

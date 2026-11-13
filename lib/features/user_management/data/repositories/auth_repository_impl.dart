@@ -35,7 +35,6 @@ class AuthRepositoryImpl implements AuthRepository {
         'username': displayName,
         'role': 'user',
         'valide': true,
-        'is_subscribed': false,
         'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       });
@@ -87,7 +86,6 @@ class AuthRepositoryImpl implements AuthRepository {
           name: email.isNotEmpty ? email.split('@').first : 'Cinéphile',
           role: 'user',
           valide: true,
-          isSubscribed: false,
         );
       }
 
@@ -102,17 +100,6 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (e) {
       return null;
     }
-  }
-
-  @override
-  Future<void> updateSubscription(String userId, bool nextState) async {
-    await _supabase
-        .from('profiles')
-        .update({
-          'is_subscribed': nextState,
-          'updated_at': DateTime.now().toIso8601String(),
-        })
-        .eq('id', userId);
   }
 
   // --- Méthodes d'Administration PWA ---

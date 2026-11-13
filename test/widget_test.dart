@@ -1,22 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:movie_explorer/app/home_page.dart';
 import 'package:movie_explorer/features/movie_management/data/services/tmdb_service.dart';
-import 'package:movie_explorer/features/user_management/domain/auth_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'features/movie_management/tmdb_fixtures.dart';
-
-class FakeAuthRepository implements AuthRepository {
-  @override
-  User? get currentUser => null;
-
-  @override
-  Future<void> signOut() async {}
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
 
 /// TMDB stub: every list returns two movies without images so no network
 /// image loading happens during the test.
@@ -24,7 +14,7 @@ TmdbService fakeTmdbService({int status = 200}) => TmdbService(
   apiKey: 'test',
   client: fakeTmdb((request) {
     final slug = request.url.pathSegments.last;
-    final ids = slug.length; // distinct ids per list
+    final ids = slug.length;
     return (
       status,
       {
@@ -40,13 +30,19 @@ TmdbService fakeTmdbService({int status = 200}) => TmdbService(
 );
 
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    await Supabase.initialize(
+      url: 'https://supabase.co',
+      publishableKey: 'dummy-anon-key',
+    );
+  });
+
   testWidgets('Movie Explorer home screen loads', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: HomePage(
-          authService: FakeAuthRepository(),
-          tmdbService: fakeTmdbService(),
-        ),
+      ProviderScope(
+        child: MaterialApp(home: HomePage(tmdbService: fakeTmdbService())),
       ),
     );
 
@@ -58,17 +54,13 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: HomePage(
-          authService: FakeAuthRepository(),
-          tmdbService: fakeTmdbService(),
-        ),
+      ProviderScope(
+        child: MaterialApp(home: HomePage(tmdbService: fakeTmdbService())),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('POPULAR RIGHT NOW'), findsOneWidget);
-    // Featured card + first card of the popular row.
     expect(find.text('popular 7'), findsNWidgets(2));
     expect(find.text('Popular'), findsOneWidget);
     expect(find.text('See all'), findsWidgets);
@@ -85,10 +77,9 @@ void main() {
 
   testWidgets('home shows a retry action when TMDB fails', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: HomePage(
-          authService: FakeAuthRepository(),
-          tmdbService: fakeTmdbService(status: 500),
+      ProviderScope(
+        child: MaterialApp(
+          home: HomePage(tmdbService: fakeTmdbService(status: 500)),
         ),
       ),
     );

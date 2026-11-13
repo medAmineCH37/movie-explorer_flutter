@@ -9,6 +9,7 @@ import '../../features/movie_management/presentation/pages/movie_catalog_page.da
 import '../../features/movie_management/presentation/pages/movie_details_page.dart';
 import '../../features/movie_discovery/presentation/pages/movie_search_page.dart';
 import '../../features/personal_collection/presentation/pages/collection_page.dart';
+import '../../features/subscription_management/presentation/pages/subscription_page.dart';
 import '../../features/user_management/presentation/pages/forgot_password_page.dart';
 import '../../features/user_management/presentation/pages/login_page.dart';
 import '../../features/user_management/presentation/pages/profile_page.dart';
@@ -45,6 +46,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/collection',
         builder: (context, state) => const CollectionPage(),
+      ),
+      GoRoute(
+        path: '/subscription',
+        builder: (context, state) => const SubscriptionPage(),
       ),
       GoRoute(
         path: '/profile',
@@ -102,8 +107,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           location != '/' &&
           !authPage &&
           location != '/movie' &&
-          !location.startsWith('/movie/'))
-        return '/login';
+          !location.startsWith('/movie/')) {
+        return Uri(
+          path: '/login',
+          queryParameters: {'redirect': state.uri.toString()},
+        ).toString();
+      }
       if (authState.user != null && authPage) return '/';
       if (location.startsWith('/module/user-management') &&
           authState.user?.role.toLowerCase() != 'admin')

@@ -201,15 +201,6 @@ class _UserDetailPageState extends State<UserDetailPage> {
                       ? const Color(0xFF2E6045)
                       : const Color(0xFF96443C),
                 ),
-                const Divider(height: 24),
-                _buildDetailRow(
-                  'Forfait Streaming',
-                  user.isSubscribed ? 'Abonné Premium ✨' : 'Compte Gratuit',
-                  badgeColor: user.isSubscribed
-                      ? const Color(0xFFF6EDDA)
-                      : const Color(0xFFF0F0F0),
-                  badgeTextColor: user.isSubscribed ? accentGold : textMuted,
-                ),
               ],
             ),
           ),
@@ -237,7 +228,6 @@ class _UserDetailPageState extends State<UserDetailPage> {
                         email: user.email,
                         role: user.role,
                         valide: newStatus,
-                        isSubscribed: user.isSubscribed,
                       );
                     });
 
@@ -291,7 +281,6 @@ class _UserDetailPageState extends State<UserDetailPage> {
                         email: user.email,
                         role: nextRole,
                         valide: user.valide,
-                        isSubscribed: user.isSubscribed,
                       );
                     });
 

@@ -88,7 +88,6 @@ class AuthNotifier extends Notifier<AuthState> {
               name: email.split('@').first,
               role: 'user',
               valide: true,
-              isSubscribed: false,
             );
 
         if (!effectiveProfile.valide) {
@@ -143,21 +142,6 @@ class AuthNotifier extends Notifier<AuthState> {
       );
     }
     return false;
-  }
-
-  Future<void> toggleSubscription() async {
-    final currentUser = state.user;
-    if (currentUser == null) return;
-
-    final nextState = !currentUser.isSubscribed;
-    try {
-      await _service.updateSubscription(currentUser.id, nextState);
-      await _loadSession();
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Échec de la mise à jour de l\'abonnement.',
-      );
-    }
   }
 
   Future<void> refreshProfile() async {

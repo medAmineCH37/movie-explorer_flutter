@@ -365,7 +365,6 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                                             email: user.email,
                                             role: user.role,
                                             valide: newStatus,
-                                            isSubscribed: user.isSubscribed,
                                           );
                                         });
                                       },
@@ -409,8 +408,6 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                                                   email: user.email,
                                                   role: nextRole,
                                                   valide: user.valide,
-                                                  isSubscribed:
-                                                      user.isSubscribed,
                                                 );
                                               });
 
