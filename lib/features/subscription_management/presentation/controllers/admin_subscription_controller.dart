@@ -17,6 +17,17 @@ class AdminSubscriptionController extends ChangeNotifier {
   bool isLoading = false;
   bool isBusy = false;
   String? error;
+  bool _disposed = false;
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 
   List<Subscription> get visible => subscriptions.where((subscription) {
     final matchesFilter = filter == null || subscription.state == filter;
@@ -47,18 +58,18 @@ class AdminSubscriptionController extends ChangeNotifier {
 
   void setFilter(SubscriptionState? value) {
     filter = value;
-    notifyListeners();
+    _notify();
   }
 
   void setQuery(String value) {
     query = value.trim().toLowerCase();
-    notifyListeners();
+    _notify();
   }
 
   Future<void> load() async {
     isLoading = true;
     error = null;
-    notifyListeners();
+    _notify();
 
     try {
       final results = await Future.wait([
@@ -71,7 +82,7 @@ class AdminSubscriptionController extends ChangeNotifier {
       error = e.toString();
     } finally {
       isLoading = false;
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -89,7 +100,7 @@ class AdminSubscriptionController extends ChangeNotifier {
 
   Future<void> _run(Future<void> Function() action) async {
     isBusy = true;
-    notifyListeners();
+    _notify();
 
     try {
       await action();

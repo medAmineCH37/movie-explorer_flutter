@@ -28,10 +28,17 @@ class SubscriptionController extends ChangeNotifier {
   List<Subscription> get history =>
       subscriptions.where((subscription) => subscription != current).toList();
 
+  bool _disposed = false;
+
   Future<void> load() async {
     isLoading = true;
     error = null;
-    notifyListeners();
+    _notify();
+
+    final adminCheck = _repository.isAdmin().then<bool?>(
+      (value) => value,
+      onError: (Object _) => null,
+    );
 
     try {
       subscriptions = await _repository.getSubscriptions();
@@ -39,15 +46,11 @@ class SubscriptionController extends ChangeNotifier {
       error = e.toString();
     } finally {
       isLoading = false;
-      notifyListeners();
     }
 
-    try {
-      isAdmin = await _repository.isAdmin();
-    } catch (_) {
-      isAdmin = false;
-    }
-    notifyListeners();
+    final admin = await adminCheck;
+    if (admin != null) isAdmin = admin;
+    _notify();
   }
 
   Future<void> subscribe(SubscriptionPlan plan) async {
@@ -64,12 +67,22 @@ class SubscriptionController extends ChangeNotifier {
     subscriptions = [];
     isAdmin = false;
     error = null;
-    notifyListeners();
+    _notify();
+  }
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 
   Future<void> _run(Future<void> Function() action) async {
     isBusy = true;
-    notifyListeners();
+    _notify();
 
     try {
       await action();
