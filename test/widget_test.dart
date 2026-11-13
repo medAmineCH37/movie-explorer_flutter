@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:movie_explorer/app/home_page.dart';
-import 'package:movie_explorer/features/movie_management/data/services/tmdb_service.dart';
+import 'package:movie_explorer/features/movie_management/domain/repositories/movies_repository.dart';
 import 'package:movie_explorer/features/user_management/domain/auth_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'features/movie_management/tmdb_fixtures.dart';
+import 'features/movie_management/fake_movies_repository.dart';
 
 class FakeAuthRepository implements AuthRepository {
   @override
@@ -15,26 +15,16 @@ class FakeAuthRepository implements AuthRepository {
   Future<void> signOut() async {}
 }
 
-/// TMDB stub: every list returns two movies without images so no network
-/// image loading happens during the test.
-TmdbService fakeTmdbService({int status = 200}) => TmdbService(
-  apiKey: 'test',
-  client: fakeTmdb((request) {
-    final slug = request.url.pathSegments.last;
-    final ids = slug.length; // distinct ids per list
-    return (
-      status,
-      {
-        'page': 1,
-        'total_pages': 1,
-        'results': [
-          for (final id in [ids, ids + 100])
-            {...movieJson(id), 'poster_path': null, 'title': '$slug $id'},
-        ],
-      },
-    );
-  }),
-);
+FakeMoviesRepository fakeMovies({bool fail = false}) {
+  final repo = FakeMoviesRepository(
+    movies: [
+      FakeMovie(id: 7, title: 'Top Movie', popularity: 99),
+      FakeMovie(id: 8, title: 'Second Movie', popularity: 50),
+    ],
+  );
+  if (fail) repo.failWith = const MovieException('Offline');
+  return repo;
+}
 
 void main() {
   testWidgets('Movie Explorer home screen loads', (tester) async {
@@ -42,7 +32,7 @@ void main() {
       MaterialApp(
         home: HomePage(
           authService: FakeAuthRepository(),
-          tmdbService: fakeTmdbService(),
+          moviesRepository: fakeMovies(),
         ),
       ),
     );
@@ -58,7 +48,7 @@ void main() {
       MaterialApp(
         home: HomePage(
           authService: FakeAuthRepository(),
-          tmdbService: fakeTmdbService(),
+          moviesRepository: fakeMovies(),
         ),
       ),
     );
@@ -66,7 +56,7 @@ void main() {
 
     expect(find.text('POPULAR RIGHT NOW'), findsOneWidget);
     // Featured card + first card of the popular row.
-    expect(find.text('popular 7'), findsNWidgets(2));
+    expect(find.text('Top Movie'), findsNWidgets(2));
     expect(find.text('Popular'), findsOneWidget);
     expect(find.text('See all'), findsWidgets);
 
@@ -80,18 +70,18 @@ void main() {
     }
   });
 
-  testWidgets('home shows a retry action when TMDB fails', (tester) async {
+  testWidgets('home shows a retry action when loading fails', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: HomePage(
           authService: FakeAuthRepository(),
-          tmdbService: fakeTmdbService(status: 500),
+          moviesRepository: fakeMovies(fail: true),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Could not load movies from TMDB.'), findsOneWidget);
+    expect(find.text('Could not load movies.'), findsOneWidget);
     expect(find.text('Try again'), findsWidgets);
   });
 }
