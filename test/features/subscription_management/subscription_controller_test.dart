@@ -8,6 +8,14 @@ class FakeSubscriptionRepository implements SubscriptionRepository {
   final List<Subscription> rows = [];
   int _nextId = 1;
   bool shouldThrow = false;
+  bool admin = false;
+  bool adminCheckFails = false;
+
+  @override
+  Future<bool> isAdmin() async {
+    if (adminCheckFails) throw Exception('Network error');
+    return admin;
+  }
 
   @override
   Future<List<Subscription>> getSubscriptions() async {
@@ -119,6 +127,32 @@ void main() {
 
       expect(controller.currentPlan, SubscriptionPlan.free);
       expect(controller.history, hasLength(1));
+    });
+
+    test('knows when the user is an admin', () async {
+      await controller.load();
+      expect(controller.isAdmin, isFalse);
+
+      repository.admin = true;
+      await controller.load();
+      expect(controller.isAdmin, isTrue);
+    });
+
+    test('a failed admin check keeps the admin flag', () async {
+      repository.admin = true;
+      await controller.load();
+
+      repository.adminCheckFails = true;
+      await Future.wait([controller.load(), controller.load()]);
+
+      expect(controller.isAdmin, isTrue);
+    });
+
+    test('loading after dispose does not throw', () async {
+      final pending = controller.load();
+      controller.dispose();
+
+      await expectLater(pending, completes);
     });
 
     test('stores an error when loading fails', () async {

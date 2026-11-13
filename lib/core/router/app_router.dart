@@ -9,6 +9,7 @@ import '../../features/movie_management/presentation/pages/movie_catalog_page.da
 import '../../features/movie_management/presentation/pages/movie_details_page.dart';
 import '../../features/movie_discovery/presentation/pages/movie_search_page.dart';
 import '../../features/personal_collection/presentation/pages/collection_page.dart';
+import '../../features/subscription_management/presentation/pages/admin_subscriptions_page.dart';
 import '../../features/subscription_management/presentation/pages/subscription_page.dart';
 import '../../features/user_management/presentation/pages/forgot_password_page.dart';
 import '../../features/user_management/presentation/pages/login_page.dart';
@@ -66,6 +67,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/subscription',
         builder: (context, state) =>
             _withBackFallback(context, const SubscriptionPage()),
+      ),
+      GoRoute(
+        path: '/admin/subscriptions',
+        builder: (context, state) =>
+            _withBackFallback(context, const AdminSubscriptionsPage()),
       ),
       GoRoute(
         path: '/profile',
