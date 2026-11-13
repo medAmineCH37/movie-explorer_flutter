@@ -33,8 +33,13 @@ class FakeSubscriptionRepository implements SubscriptionRepository {
     );
   }
 
-  void _insert(SubscriptionPlan plan, double amount, {bool card = false}) {
-    final now = DateTime.now();
+  void _insert(
+    SubscriptionPlan plan,
+    double amount, {
+    double credit = 0,
+    bool card = false,
+  }) {
+    final now = DateTime.now().subtract(const Duration(minutes: 1));
     rows.add(
       Subscription(
         id: _nextId++,
@@ -43,6 +48,7 @@ class FakeSubscriptionRepository implements SubscriptionRepository {
         startedAt: now.add(const Duration(milliseconds: 1)),
         endsAt: now.add(Duration(days: plan.durationDays)),
         amountPaid: amount,
+        creditApplied: credit,
         cardBrand: card ? 'Visa' : null,
         cardLast4: card ? '4242' : null,
       ),
@@ -74,7 +80,7 @@ class FakeSubscriptionRepository implements SubscriptionRepository {
       return CheckoutResult(url: 'https://checkout.stripe.com/c/pay/$id');
     }
     _end(change.from!, change.refund);
-    _insert(plan, 0);
+    _insert(plan, 0, credit: plan.price);
     return CheckoutResult(refund: change.refund);
   }
 
@@ -83,7 +89,12 @@ class FakeSubscriptionRepository implements SubscriptionRepository {
     final change = sessions.remove(sessionId);
     if (change == null) throw Exception('The payment was not completed.');
     if (change.from != null) _end(change.from!, 0);
-    _insert(change.plan, change.total, card: true);
+    _insert(
+      change.plan,
+      change.total,
+      credit: roundMoney(change.plan.price - change.total),
+      card: true,
+    );
   }
 
   @override
@@ -198,6 +209,31 @@ void main() {
       expect(result.refund, 21.66);
       expect(controller.currentPlan, SubscriptionPlan.monthly);
       expect(controller.history.single.refundAmount, 21.66);
+    });
+
+    test('cancelling a plan paid with credit still refunds', () async {
+      addRunning(SubscriptionPlan.yearly, daysLeft: 300);
+      await controller.load();
+      await controller.checkout(SubscriptionPlan.monthly, returnUrl);
+
+      expect(controller.current!.amountPaid, 0);
+      expect(controller.current!.creditApplied, 2.99);
+
+      final refund = await controller.cancel();
+
+      expect(refund, 2.89);
+    });
+
+    test('cancelling after an upgrade refunds the whole plan value', () async {
+      addRunning(SubscriptionPlan.monthly, daysLeft: 20);
+      await controller.load();
+      await payFor(SubscriptionPlan.yearly);
+
+      expect(controller.current!.creditApplied, 1.99);
+
+      final refund = await controller.cancel();
+
+      expect(refund, 29.91);
     });
 
     test('small differences are charged the Stripe minimum', () async {

@@ -22,6 +22,8 @@ type Row = {
   ends_at: string;
   amount_paid: number | string;
   refund_amount: number | string;
+  credit_applied: number | string;
+  credit_from: number | null;
   stripe_payment_intent: string | null;
 };
 
@@ -66,7 +68,8 @@ function creditOf(row: Row) {
   const plan = PLANS[row.plan];
   const left = Math.floor((new Date(row.ends_at).getTime() - Date.now()) / DAY);
   const days = Math.max(0, Math.min(left, plan.days));
-  const paid = Number(row.amount_paid) - Number(row.refund_amount);
+  const paid = Number(row.amount_paid) + Number(row.credit_applied) -
+    Number(row.refund_amount);
   return round(Math.max(0, Math.min((plan.price * days) / plan.days, paid)));
 }
 
@@ -84,13 +87,38 @@ async function activeSubscription(userId: string): Promise<Row | null> {
   return data;
 }
 
-async function endWithRefund(row: Row, refund: number) {
-  if (refund > 0 && row.stripe_payment_intent) {
-    await stripe("/refunds", {
-      payment_intent: row.stripe_payment_intent,
-      amount: cents(refund),
-    });
+async function refundToCard(row: Row, refund: number) {
+  let remaining = Math.round(refund * 100);
+  let current: Row | null = row;
+
+  for (let step = 0; remaining > 0 && current && step < 10; step++) {
+    if (current.stripe_payment_intent) {
+      const intent = await stripe(
+        `/payment_intents/${current.stripe_payment_intent}?expand[]=latest_charge`,
+      );
+      const charge = intent.latest_charge;
+      const available = charge ? charge.amount - charge.amount_refunded : 0;
+      const part = Math.min(remaining, available);
+      if (part > 0) {
+        await stripe("/refunds", {
+          payment_intent: current.stripe_payment_intent,
+          amount: String(part),
+        });
+        remaining -= part;
+      }
+    }
+    if (!current.credit_from) break;
+    const { data } = await db
+      .from("subscriptions")
+      .select()
+      .eq("id", current.credit_from)
+      .maybeSingle();
+    current = data;
   }
+}
+
+async function endWithRefund(row: Row, refund: number) {
+  if (refund > 0) await refundToCard(row, refund);
 
   const { error } = await db
     .from("subscriptions")
@@ -142,7 +170,13 @@ async function checkout(userId: string, email: string | undefined, body: any) {
 
   if (total === 0) {
     if (current) await endWithRefund(current, refund);
-    await insertSubscription({ user_id: userId, plan: body.plan, amount_paid: 0 });
+    await insertSubscription({
+      user_id: userId,
+      plan: body.plan,
+      amount_paid: 0,
+      credit_applied: plan.price,
+      credit_from: current?.id ?? null,
+    });
     return { switched: true, refund };
   }
 
@@ -163,6 +197,7 @@ async function checkout(userId: string, email: string | undefined, body: any) {
     "metadata[user_id]": userId,
     "metadata[plan]": body.plan,
     "metadata[from_id]": current ? String(current.id) : "",
+    "metadata[credit]": String(round(plan.price - total)),
     success_url:
       `${body.returnUrl}${separator}checkout=success&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${body.returnUrl}${separator}checkout=cancelled`,
@@ -214,6 +249,8 @@ async function confirm(userId: string, body: any) {
       user_id: userId,
       plan: session.metadata.plan,
       amount_paid: session.amount_total / 100,
+      credit_applied: Number(session.metadata.credit ?? 0),
+      credit_from: fromId || null,
       card_brand: brand,
       card_last4: card?.last4 ?? null,
       stripe_session_id: sessionId,

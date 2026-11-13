@@ -7,7 +7,11 @@ String paymentSummary(Subscription subscription) {
   final parts = [
     subscription.amountPaid > 0
         ? 'Paid ${formatMoney(subscription.amountPaid)}'
+        : subscription.creditApplied > 0
+        ? 'Paid with credit'
         : 'No charge',
+    if (subscription.creditApplied > 0)
+      '${formatMoney(subscription.creditApplied)} credit used',
     if (subscription.refundAmount > 0)
       'Refunded ${formatMoney(subscription.refundAmount)}',
     ?subscription.card?.label,
