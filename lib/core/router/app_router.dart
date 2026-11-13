@@ -4,11 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/home_page.dart';
 import '../../app/module_placeholder_page.dart';
+import '../../features/movie_management/data/models/movie.dart';
 import '../../features/movie_management/data/models/movie_category.dart';
 import '../../features/movie_management/presentation/pages/movie_catalog_page.dart';
 import '../../features/movie_management/presentation/pages/movie_details_page.dart';
 import '../../features/movie_discovery/presentation/pages/movie_search_page.dart';
 import '../../features/personal_collection/presentation/pages/collection_page.dart';
+import '../../features/ratings_reviews/presentation/pages/all_reviews_page.dart';
+import '../../features/ratings_reviews/presentation/pages/my_ratings_page.dart';
 import '../../features/recommendations_custom_lists/presentation/pages/community_lists_page.dart';
 import '../../features/recommendations_custom_lists/presentation/pages/for_you_page.dart';
 import '../../features/recommendations_custom_lists/presentation/pages/list_detail_page.dart';
@@ -66,6 +69,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/collection',
         builder: (context, state) =>
             _withBackFallback(context, const CollectionPage()),
+      ),
+      GoRoute(
+        path: '/my-ratings',
+        builder: (context, state) =>
+            _withBackFallback(context, const MyRatingsPage()),
       ),
       GoRoute(
         path: '/for-you',
@@ -129,6 +137,22 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ),
+      ),
+      GoRoute(
+        path: '/movie/:movieId/reviews',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['movieId'] ?? '');
+          if (id == null) {
+            return const Scaffold(
+              body: Center(child: Text('Invalid movie ID')),
+            );
+          }
+          final movie = state.extra is Movie ? state.extra as Movie : null;
+          return _withBackFallback(
+            context,
+            AllReviewsPage(movieId: id, movie: movie),
+          );
+        },
       ),
       GoRoute(
         path: '/movie/:movieId',

@@ -84,6 +84,12 @@ class ProfilePage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             ListTile(
+              leading: const Icon(Icons.star_outline),
+              title: const Text('Mes notes et avis'),
+              subtitle: const Text('Consulter mes contributions'),
+              onTap: () => context.push('/my-ratings'),
+            ),
+            ListTile(
               leading: const Icon(Icons.logout, color: Color(0xFF96443C)),
               title: const Text(
                 'Se déconnecter de la session',

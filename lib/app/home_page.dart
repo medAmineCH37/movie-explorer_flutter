@@ -97,6 +97,7 @@ class _HomePageState extends State<HomePage> {
       'subscription-management' => '/subscription',
       'recommendations-custom-lists' => '/for-you',
       'movie-management' => '/movies',
+      'ratings-reviews' => '/my-ratings',
       _ => '/module/$moduleId',
     };
   }

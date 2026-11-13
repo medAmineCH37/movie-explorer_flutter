@@ -28,8 +28,9 @@ class PendingRatingSignalSource implements RatingSignalSource {
   Future<RatingSignals> load(String userId) async => const RatingSignals();
 }
 
-/// Ready for Module 3: reads `reviews` (rating 1–10 in schema.sql).
-/// Plug it in RecommendationService once [likedMin] is agreed with Zina.
+/// Reads the Ratings & Reviews module's 1–5 `ratings.score` values.
+/// Keep the pending source as the default until the product's liked threshold
+/// is agreed; using this adapter does not change recommendation ranking rules.
 class ReviewsRatingSignalSource implements RatingSignalSource {
   ReviewsRatingSignalSource({required this.likedMin, SupabaseClient? client})
     : _client = client ?? Supabase.instance.client;
@@ -40,14 +41,14 @@ class ReviewsRatingSignalSource implements RatingSignalSource {
   @override
   Future<RatingSignals> load(String userId) async {
     final rows = await _client
-        .from('reviews')
-        .select('tmdb_movie_id, rating, updated_at')
+        .from('ratings')
+        .select('tmdb_movie_id, score, updated_at')
         .eq('user_id', userId)
         .order('updated_at', ascending: false)
         .limit(200);
     return RatingSignals(
       liked: rows
-          .where((r) => (r['rating'] as num) >= likedMin)
+          .where((r) => (r['score'] as num) >= likedMin)
           .map(
             (r) => SignalMovie(
               movieId: (r['tmdb_movie_id'] as num).toInt(),
