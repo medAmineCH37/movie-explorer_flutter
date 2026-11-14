@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -24,7 +25,8 @@ class SubscriptionPage extends StatefulWidget {
   State<SubscriptionPage> createState() => _SubscriptionPageState();
 }
 
-class _SubscriptionPageState extends State<SubscriptionPage> {
+class _SubscriptionPageState extends State<SubscriptionPage>
+    with WidgetsBindingObserver {
   final SubscriptionController _controller = SubscriptionController();
   final AuthService _authService = AuthService();
   late final StreamSubscription<AuthState> _authSubscription;
@@ -34,6 +36,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     if (_isAuthenticated) _start();
     _authSubscription = _authService.authStateChanges.listen((data) {
       if (!mounted) return;
@@ -49,6 +52,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _authSubscription.cancel();
     _controller.dispose();
     super.dispose();
@@ -97,7 +101,46 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
   String _message(Object error) =>
       error.toString().replaceFirst('Exception: ', '');
 
-  String get _returnUrl => '${Uri.base.origin}${Uri.base.path}#/subscription';
+  /// Optional public web address of the app (e.g. a deployed web build).
+  static const String _webAppUrl = String.fromEnvironment('APP_WEB_URL');
+
+  /// Stripe session paid in the browser on mobile, confirmed when the user
+  /// comes back to the app.
+  String? _pendingSessionId;
+
+  /// Where Stripe sends the user after paying. On the web, back to this page.
+  /// On Android/iOS the app has no web address (`Uri.base` is `file:///`), so
+  /// Stripe returns to an https page and the app confirms the payment itself
+  /// when it is reopened.
+  String get _returnUrl {
+    if (kIsWeb) return '${Uri.base.origin}${Uri.base.path}#/subscription';
+    return _webAppUrl.isNotEmpty
+        ? '$_webAppUrl/#/subscription'
+        : 'https://stripe.com/';
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final sessionId = _pendingSessionId;
+    if (state != AppLifecycleState.resumed || sessionId == null) return;
+    _pendingSessionId = null;
+    _confirmMobilePayment(sessionId);
+  }
+
+  Future<void> _confirmMobilePayment(String sessionId) async {
+    try {
+      await _controller.confirmCheckout(sessionId);
+      final current = _controller.current;
+      _show(
+        current == null
+            ? 'Payment confirmed.'
+            : 'Payment confirmed. You are now on ${current.plan.label}.',
+      );
+    } catch (e) {
+      await _controller.load();
+      _show(_message(e));
+    }
+  }
 
   Future<void> _subscribe(SubscriptionPlan plan) async {
     final change = _controller.quote(plan);
@@ -159,7 +202,15 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
       final result = await _controller.checkout(plan, _returnUrl);
       final url = result.url;
       if (url != null) {
-        await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+        if (kIsWeb) {
+          await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+        } else {
+          // The checkout URL contains the Stripe session id (cs_...).
+          _pendingSessionId = RegExp(r'cs_(?:test|live)_[A-Za-z0-9]+')
+              .firstMatch(url)
+              ?.group(0);
+          await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        }
         return;
       }
       _show(
