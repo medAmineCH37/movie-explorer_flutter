@@ -142,9 +142,9 @@ class AuthNotifier extends Notifier<AuthState> {
             'Veuillez confirmer votre adresse e-mail avant de vous connecter.';
       }
       state = AuthState(error: errorMessage, isLoading: false);
-    } catch (e) {
+    } catch (_) {
       state = AuthState(
-        error: 'Impossible de se connecter. Vérifiez votre saisie ou votre réseau.',
+        error: 'Unable to sign in. Please try again.',
         isLoading: false,
       );
     }

@@ -39,6 +39,17 @@ class _UserDetailPageState extends State<UserDetailPage> {
 
     try {
       final user = await _authService.getUserById(widget.userId);
+
+      debugPrint('USER=${user?.name}');
+      debugPrint('createdAt=${user?.createdAt}');
+      debugPrint('updatedAt=${user?.updatedAt}');
+      debugPrint('isSubscribed=${user?.isSubscribed}');
+
+      debugPrint('USER=${user?.name}');
+      debugPrint('createdAt=${user?.createdAt}');
+      debugPrint('updatedAt=${user?.updatedAt}');
+      debugPrint('isSubscribed=${user?.isSubscribed}');
+
       if (mounted) {
         setState(() {
           _currentUser = user;
@@ -80,22 +91,22 @@ class _UserDetailPageState extends State<UserDetailPage> {
         actions: _currentUser == null
             ? const []
             : [
-                IconButton(
-                  tooltip: 'Modifier le compte',
-                  onPressed: () => _editUser(_currentUser!),
-                  icon: const Icon(Icons.edit_outlined),
-                ),
-                IconButton(
-                  tooltip: 'Supprimer le compte',
-                  onPressed: _currentUser!.id == _authService.currentUser?.id
-                      ? null
-                      : () => _confirmDeleteUser(_currentUser!),
-                  icon: const Icon(
-                    Icons.delete_outline,
-                    color: Colors.redAccent,
-                  ),
-                ),
-              ],
+          IconButton(
+            tooltip: 'Modifier le compte',
+            onPressed: () => _editUser(_currentUser!),
+            icon: const Icon(Icons.edit_outlined),
+          ),
+          IconButton(
+            tooltip: 'Supprimer le compte',
+            onPressed: _currentUser!.id == _authService.currentUser?.id
+                ? null
+                : () => _confirmDeleteUser(_currentUser!),
+            icon: const Icon(
+              Icons.delete_outline,
+              color: Colors.redAccent,
+            ),
+          ),
+        ],
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
@@ -128,6 +139,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Compte mis à jour.')),
       );
+
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -279,9 +291,47 @@ class _UserDetailPageState extends State<UserDetailPage> {
                       ? const Color(0xFF2E6045)
                       : const Color(0xFF96443C),
                 ),
+                const Divider(height: 24),
+
+                _buildDetailRow(
+                  'Created At',
+                  user.createdAt != null
+                      ? user.createdAt!
+                      .toLocal()
+                      .toString()
+                      .substring(0, 16)
+                      : 'Unknown',
+                ),
+
+                const Divider(height: 24),
+
+                _buildDetailRow(
+                  'Last Updated',
+                  user.updatedAt != null
+                      ? user.updatedAt!
+                      .toLocal()
+                      .toString()
+                      .substring(0, 16)
+                      : 'Unknown',
+                ),
+
+                const Divider(height: 24),
+
+                _buildDetailRow(
+                  'Subscription',
+                  user.isSubscribed ? 'Premium' : 'Free',
+                  badgeColor: user.isSubscribed
+                      ? const Color(0xFFE8F2EB)
+                      : const Color(0xFFF0F0F0),
+                  badgeTextColor: user.isSubscribed
+                      ? const Color(0xFF2E6045)
+                      : textMuted,
+                ),
               ],
             ),
+
           ),
+
 
           const SizedBox(height: 24),
 
@@ -300,11 +350,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     if (!mounted) return;
 
                     setState(() {
-                      _currentUser = UserModel(
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
-                        role: user.role,
+                      _currentUser = user.copyWith(
                         valide: newStatus,
                       );
                     });
@@ -353,12 +399,8 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     if (!mounted) return;
 
                     setState(() {
-                      _currentUser = UserModel(
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
+                      _currentUser = user.copyWith(
                         role: nextRole,
-                        valide: user.valide,
                       );
                     });
 
@@ -398,13 +440,13 @@ class _UserDetailPageState extends State<UserDetailPage> {
   }
 
   Widget _buildDetailRow(
-    String label,
-    String value, {
-    IconData? icon,
-    Color? badgeColor,
-    Color? badgeTextColor,
-    bool isIdField = false,
-  }) {
+      String label,
+      String value, {
+        IconData? icon,
+        Color? badgeColor,
+        Color? badgeTextColor,
+        bool isIdField = false,
+      }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -515,18 +557,14 @@ class _EditManagedUserDialogState extends State<_EditManagedUserDialog> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _emailController,
+              enabled: false,
+              readOnly: true,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
-                labelText: 'Adresse e-mail',
-                helperText: 'Le changement est appliqué immédiatement.',
+                labelText: 'Email',
+                helperText: 'Email cannot be modified.',
+                prefixIcon: Icon(Icons.lock_outline),
               ),
-              validator: (value) {
-                final email = value?.trim() ?? '';
-                if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
-                  return 'Saisissez une adresse e-mail valide.';
-                }
-                return null;
-              },
             ),
           ],
         ),
@@ -534,17 +572,33 @@ class _EditManagedUserDialogState extends State<_EditManagedUserDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler'),
+          child: const Text('Cancel'),
         ),
+
+        TextButton.icon(
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Password reset feature will be connected in the next step.',
+                ),
+              ),
+            );
+          },
+          icon: const Icon(Icons.lock_reset),
+          label: const Text('Reset Password'),
+        ),
+
         FilledButton(
           onPressed: () {
             if (!_formKey.currentState!.validate()) return;
+
             Navigator.pop(context, {
               'displayName': _nameController.text.trim(),
               'email': _emailController.text.trim(),
             });
           },
-          child: const Text('Enregistrer'),
+          child: const Text('Save'),
         ),
       ],
     );

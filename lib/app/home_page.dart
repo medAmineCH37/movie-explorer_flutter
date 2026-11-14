@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:movie_explorer/core/widgets/cinea_app_bar.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../features/user_management/presentation/providers/auth_provider.dart';
 import '../features/movie_management/data/models/movie.dart';
 import '../features/movie_management/data/models/movie_category.dart';
 import '../features/movie_management/data/services/tmdb_service.dart';
@@ -9,16 +10,16 @@ import '../features/movie_management/presentation/widgets/featured_movie_card.da
 import '../features/movie_management/presentation/widgets/movie_row_section.dart';
 import '../features/movie_management/presentation/widgets/movie_state_views.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key, this.tmdbService});
 
   final TmdbService? tmdbService;
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   late final TmdbService _tmdbService;
 
   final Map<MovieCategory, Future<List<Movie>>> _categoryFutures = {};
@@ -105,6 +106,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final user = ref.watch(authProvider).user;
+    final isAdmin = user?.role.toLowerCase() == 'admin';
 
     return Scaffold(
       appBar: CineaAppBar(
@@ -208,7 +211,9 @@ class _HomePageState extends State<HomePage> {
                     ?.copyWith(color: colors.onSurfaceVariant),
               ),
             ),
-            for (final module in modules) ...[
+            for (final module in modules.where(
+                  (module) => module.id != 'user-management' || isAdmin,
+            )) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Card(
