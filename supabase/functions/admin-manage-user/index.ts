@@ -39,9 +39,12 @@ Deno.serve(async (request) => {
     .select('role')
     .eq('id', caller.id)
     .maybeSingle()
-  if (profileError || callerProfile?.role !== 'admin') {
-    return json({ error: 'Administrator access is required.' }, 403)
+
+  if (profileError || !callerProfile) {
+    return json({ error: 'Profile not found.' }, 403)
   }
+
+  const isAdmin = callerProfile.role === 'admin'
 
   let body: Record<string, unknown>
   try {
@@ -57,8 +60,11 @@ Deno.serve(async (request) => {
   }
 
   if (action === 'delete') {
-    if (userId === caller.id) {
-      return json({ error: 'You cannot delete your own account here.' }, 400)
+    if (!isAdmin && userId !== caller.id) {
+      return json(
+        { error: 'You can only delete your own account.' },
+        403
+      )
     }
     const { data: target, error: targetError } = await admin.auth.admin.getUserById(userId)
     if (targetError || !target.user) return json({ error: 'User not found.' }, 404)

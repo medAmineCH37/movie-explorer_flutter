@@ -142,7 +142,7 @@ class AuthNotifier extends Notifier<AuthState> {
         errorMessage = 'Please confirm your e-mail address before signing in.';
       }
       state = AuthState(error: errorMessage, isLoading: false);
-    } catch (e) {
+    } catch (_) {
       state = AuthState(
         error: 'Could not sign in. Check your details or your connection.',
         isLoading: false,

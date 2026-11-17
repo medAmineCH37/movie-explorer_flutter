@@ -243,6 +243,27 @@ class AuthService implements AuthRepository {
     _throwFunctionError(response);
   }
 
+  Future<void> updateMyProfile({
+    required String displayName,
+  }) async {
+    final user = currentUser;
+
+    if (user == null) {
+      throw Exception('No authenticated user.');
+    }
+
+    final cleanName = displayName.trim();
+
+    await _client
+        .from('profiles')
+        .update({
+      'display_name': cleanName,
+      'username': cleanName,
+      'updated_at': DateTime.now().toIso8601String(),
+    })
+        .eq('id', user.id);
+  }
+
   void _throwFunctionError(FunctionResponse response) {
     if (response.status < 400) return;
     final data = response.data;
